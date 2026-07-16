@@ -1,0 +1,15 @@
+{
+  "comment": "Curated allowlist of well-known Ethereum mainnet spender contracts. Keys are lowercase addresses; values are human labels. Sources: canonical deployment addresses published by each protocol — Uniswap Labs deployment docs (V2 Router 02, V3 SwapRouter02, Permit2), 1inch docs (AggregationRouterV5/V6), 0x docs (Exchange Proxy), OpenSea/ProjectOpenSea Seaport repo (Seaport 1.5/1.6), Aave address book (V3 Ethereum Pool), CoW Protocol docs (GPv2Settlement). Re-verify against Etherscan before mainnet demo.",
+  "protocols": {
+    "0x7a250d5630b4cf539739df2c5dacb4c659f2488d": "Uniswap V2 Router 02",
+    "0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45": "Uniswap V3 SwapRouter02",
+    "0x000000000022d473030f116ddee9f6b43ac78ba3": "Permit2",
+    "0x1111111254eeb25477b68fb85ed929f73a960582": "1inch Aggregation Router V5",
+    "0x111111125421ca6dc452d289314280a0f8842a65": "1inch Aggregation Router V6",
+    "0xdef1c0ded9bec7f1a1670819833240f027b25eff": "0x Exchange Proxy",
+    "0x00000000000000adc04c56bf30ac9d3c0aaf14dc": "OpenSea Seaport 1.5",
+    "0x0000000000000068f116a894984e2db1123eb395": "OpenSea Seaport 1.6",
+    "0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2": "Aave V3 Pool",
+    "0x9008d19f58aabd9ed0d60971565aa8510560ab41": "CoW Protocol GPv2 Settlement"
+  }
+}
