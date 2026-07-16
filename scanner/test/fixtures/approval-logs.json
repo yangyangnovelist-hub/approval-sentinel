@@ -1,0 +1,72 @@
+{
+  "comment": "Recorded-style Approval log fixture for a dirty wallet. Values are decimal strings; 'MAX_UINT256' is a sentinel for 2^256-1. Timestamps chosen so tokenA/unknownSpender is ~400 days old and tokenA/uniswapRouter is ~30 days old.",
+  "owner": "0x1111111111111111111111111111111111111111",
+  "latestBlock": "1000",
+  "logs": [
+    {
+      "comment": "superseded by the block-200 approval to the same (token, spender)",
+      "token": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "spender": "0x2222222222222222222222222222222222222222",
+      "value": "1000000000000000000",
+      "blockNumber": "100",
+      "logIndex": 0
+    },
+    {
+      "comment": "live unlimited approval to an unknown spender",
+      "token": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "spender": "0x2222222222222222222222222222222222222222",
+      "value": "MAX_UINT256",
+      "blockNumber": "200",
+      "logIndex": 3
+    },
+    {
+      "comment": "live finite approval to Uniswap V2 Router 02 (known protocol)",
+      "token": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "spender": "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
+      "value": "5000000000000000000000",
+      "blockNumber": "150",
+      "logIndex": 1
+    },
+    {
+      "comment": "approval later revoked on-chain (allowance now 0) - must be filtered out",
+      "token": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "spender": "0x2222222222222222222222222222222222222222",
+      "value": "100000000",
+      "blockNumber": "180",
+      "logIndex": 0
+    },
+    {
+      "comment": "the revocation event itself",
+      "token": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "spender": "0x2222222222222222222222222222222222222222",
+      "value": "0",
+      "blockNumber": "220",
+      "logIndex": 2
+    }
+  ],
+  "allowances": {
+    "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:0x2222222222222222222222222222222222222222": "MAX_UINT256",
+    "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:0x7a250d5630b4cf539739df2c5dacb4c659f2488d": "3000000000000000000000",
+    "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:0x2222222222222222222222222222222222222222": "0"
+  },
+  "tokens": {
+    "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": {
+      "symbol": "TKA",
+      "decimals": 18,
+      "ownerBalance": "1000000000000000000"
+    },
+    "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb": {
+      "symbol": "TKB",
+      "decimals": 6,
+      "ownerBalance": "0"
+    }
+  },
+  "blockTimestamps": {
+    "100": "1665440000",
+    "150": "1697408000",
+    "180": "1690000000",
+    "200": "1665440000",
+    "220": "1691000000",
+    "1000": "1700000000"
+  }
+}
