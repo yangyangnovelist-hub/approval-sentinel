@@ -1,0 +1,134 @@
+{
+  "definition": {
+    "name": "sentinel-rescan",
+    "description": "Weekly scheduled re-scan of the watched wallet. Reads the live on-chain allowance of the demo LINK approval on Sepolia. In the full design a notification action follows this read (requires KeeperHub Pro). ApprovalSentinel security monitor (Task 2.4).",
+    "enabled": false,
+    "nodes": [
+      {
+        "id": "schedule-1",
+        "type": "trigger",
+        "data": {
+          "type": "trigger",
+          "label": "Weekly Monday 09:00 UTC",
+          "description": "Fires the re-scan once a week",
+          "status": "idle",
+          "config": {
+            "triggerType": "Schedule",
+            "scheduleCron": "0 9 * * 1",
+            "scheduleTimezone": "UTC"
+          }
+        }
+      },
+      {
+        "id": "read-allowance",
+        "type": "action",
+        "data": {
+          "type": "action",
+          "label": "Re-scan allowance",
+          "description": "Read the current on-chain allowance(owner, 0xdEaD) for the demo approval",
+          "status": "idle",
+          "config": {
+            "actionType": "web3/read-contract",
+            "network": "11155111",
+            "contractAddress": "0x779877A7B0D9E8603169DdbD7836e478b4624789",
+            "abi": "[{\"constant\":true,\"inputs\":[{\"name\":\"owner\",\"type\":\"address\"},{\"name\":\"spender\",\"type\":\"address\"}],\"name\":\"allowance\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
+            "abiFunction": "allowance",
+            "functionArgs": "[\"0xC7d92E2089BfD22539553FA8ea061cB094274dc5\",\"0x000000000000000000000000000000000000dEaD\"]"
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1",
+        "type": "default",
+        "source": "schedule-1",
+        "target": "read-allowance"
+      }
+    ]
+  },
+  "createResult": {
+    "id": "hj4oygp1tpk4567tkv3yy",
+    "name": "sentinel-rescan",
+    "description": "Weekly scheduled re-scan of the watched wallet. Reads the live on-chain allowance of the demo LINK approval on Sepolia. In the full design a notification action follows this read (requires KeeperHub Pro). ApprovalSentinel security monitor (Task 2.4).",
+    "userId": "LBFrnHIC7xop5qcsj6pCJ3MD2d2jSSXj",
+    "organizationId": "9d364ff1-6601-4ac0-85e0-344dd0935490",
+    "isAnonymous": false,
+    "featured": false,
+    "featuredOrder": 0,
+    "featuredProtocol": null,
+    "featuredProtocolOrder": 0,
+    "projectId": null,
+    "tagId": null,
+    "nodes": [
+      {
+        "id": "schedule-1",
+        "data": {
+          "type": "trigger",
+          "label": "Weekly Monday 09:00 UTC",
+          "config": {
+            "triggerType": "Schedule",
+            "scheduleCron": "0 9 * * 1",
+            "scheduleTimezone": "UTC"
+          },
+          "status": "idle",
+          "description": "Fires the re-scan once a week"
+        },
+        "type": "trigger",
+        "position": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "id": "read-allowance",
+        "data": {
+          "type": "action",
+          "label": "Re-scan allowance",
+          "config": {
+            "abi": "[{\"constant\":true,\"inputs\":[{\"name\":\"owner\",\"type\":\"address\"},{\"name\":\"spender\",\"type\":\"address\"}],\"name\":\"allowance\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
+            "network": "11155111",
+            "actionType": "web3/read-contract",
+            "abiFunction": "allowance",
+            "functionArgs": "[\"0xC7d92E2089BfD22539553FA8ea061cB094274dc5\",\"0x000000000000000000000000000000000000dEaD\"]",
+            "contractAddress": "0x779877A7B0D9E8603169DdbD7836e478b4624789"
+          },
+          "status": "idle",
+          "description": "Read the current on-chain allowance(owner, 0xdEaD) for the demo approval"
+        },
+        "type": "action",
+        "position": {
+          "x": 252,
+          "y": 0
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1",
+        "type": "default",
+        "source": "schedule-1",
+        "target": "read-allowance"
+      }
+    ],
+    "visibility": "private",
+    "enabled": false,
+    "sourceWorkflowId": null,
+    "createdAt": "2026-07-16T12:49:13.902Z",
+    "updatedAt": "2026-07-16T12:49:13.902Z",
+    "seededAt": null,
+    "isListed": false,
+    "listedSlug": null,
+    "listedAt": null,
+    "inputSchema": null,
+    "outputMapping": null,
+    "priceUsdcPerCall": null,
+    "workflowType": "read",
+    "category": null,
+    "chain": null,
+    "listingVersion": 1,
+    "deletedAt": null,
+    "deactivatedAt": null
+  },
+  "workflowId": "hj4oygp1tpk4567tkv3yy"
+}

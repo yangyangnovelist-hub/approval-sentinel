@@ -1,0 +1,44 @@
+{
+  "_note": "FULL design (requires KeeperHub Pro). The webhook/send-webhook action returns 402 upgrade_required on the free plan, so this variant is NOT created on KeeperHub — it documents the intended sentinel-alert: Approval event -> notify owner. The creatable free-tier variant (Event -> web3 read) is sentinel-alert.json. Owner-filtering would add a Condition node comparing args.owner to the watched owner before notifying.",
+  "name": "sentinel-alert",
+  "description": "Real-time alert: fires whenever a new ERC-20 Approval is granted on the watched LINK token (Sepolia) and posts the spender + amount to the owner.",
+  "enabled": true,
+  "nodes": [
+    {
+      "id": "approval-event",
+      "type": "trigger",
+      "data": {
+        "type": "trigger",
+        "label": "LINK Approval (Sepolia)",
+        "description": "Listens for Approval events on the LINK token",
+        "status": "idle",
+        "config": {
+          "triggerType": "Event",
+          "network": "11155111",
+          "contractAddress": "0x779877A7B0D9E8603169DdbD7836e478b4624789",
+          "contractABI": "[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"spender\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Approval\",\"type\":\"event\"}]",
+          "eventName": "Approval"
+        }
+      }
+    },
+    {
+      "id": "notify",
+      "type": "action",
+      "data": {
+        "type": "action",
+        "label": "Notify owner",
+        "description": "Alert the wallet owner about the new approval (PRO: action.webhook)",
+        "status": "idle",
+        "config": {
+          "actionType": "webhook/send-webhook",
+          "webhookUrl": "https://webhook.site/approval-sentinel-demo",
+          "webhookMethod": "POST",
+          "webhookPayload": "{\"source\":\"sentinel-alert\",\"watchedOwner\":\"0xC7d92E2089BfD22539553FA8ea061cB094274dc5\",\"token\":\"{{@approval-event:LINK Approval (Sepolia).address}}\",\"spender\":\"{{@approval-event:LINK Approval (Sepolia).args.spender}}\",\"owner\":\"{{@approval-event:LINK Approval (Sepolia).args.owner}}\",\"value\":\"{{@approval-event:LINK Approval (Sepolia).args.value}}\",\"transactionHash\":\"{{@approval-event:LINK Approval (Sepolia).transactionHash}}\"}"
+        }
+      }
+    }
+  ],
+  "edges": [
+    { "id": "e1", "type": "default", "source": "approval-event", "target": "notify" }
+  ]
+}

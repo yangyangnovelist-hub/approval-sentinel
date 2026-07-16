@@ -1,0 +1,138 @@
+{
+  "definition": {
+    "name": "sentinel-alert",
+    "description": "Real-time monitor: fires whenever a new ERC-20 Approval is granted on the watched LINK token (Sepolia), then re-reads the resulting allowance. In the full design a notification action follows (requires KeeperHub Pro). ApprovalSentinel security monitor (Task 2.4).",
+    "enabled": false,
+    "nodes": [
+      {
+        "id": "approval-event",
+        "type": "trigger",
+        "data": {
+          "type": "trigger",
+          "label": "LINK Approval (Sepolia)",
+          "description": "Listens for Approval events on the LINK token",
+          "status": "idle",
+          "config": {
+            "triggerType": "Event",
+            "network": "11155111",
+            "contractAddress": "0x779877A7B0D9E8603169DdbD7836e478b4624789",
+            "contractABI": "[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"spender\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Approval\",\"type\":\"event\"}]",
+            "eventName": "Approval"
+          }
+        }
+      },
+      {
+        "id": "read-allowance",
+        "type": "action",
+        "data": {
+          "type": "action",
+          "label": "Confirm new allowance",
+          "description": "Read the current on-chain allowance(owner, 0xdEaD) for the demo approval",
+          "status": "idle",
+          "config": {
+            "actionType": "web3/read-contract",
+            "network": "11155111",
+            "contractAddress": "0x779877A7B0D9E8603169DdbD7836e478b4624789",
+            "abi": "[{\"constant\":true,\"inputs\":[{\"name\":\"owner\",\"type\":\"address\"},{\"name\":\"spender\",\"type\":\"address\"}],\"name\":\"allowance\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
+            "abiFunction": "allowance",
+            "functionArgs": "[\"0xC7d92E2089BfD22539553FA8ea061cB094274dc5\",\"0x000000000000000000000000000000000000dEaD\"]"
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1",
+        "type": "default",
+        "source": "approval-event",
+        "target": "read-allowance"
+      }
+    ]
+  },
+  "createResult": {
+    "id": "21tr6ym2rg3kj16lbsguh",
+    "name": "sentinel-alert",
+    "description": "Real-time monitor: fires whenever a new ERC-20 Approval is granted on the watched LINK token (Sepolia), then re-reads the resulting allowance. In the full design a notification action follows (requires KeeperHub Pro). ApprovalSentinel security monitor (Task 2.4).",
+    "userId": "LBFrnHIC7xop5qcsj6pCJ3MD2d2jSSXj",
+    "organizationId": "9d364ff1-6601-4ac0-85e0-344dd0935490",
+    "isAnonymous": false,
+    "featured": false,
+    "featuredOrder": 0,
+    "featuredProtocol": null,
+    "featuredProtocolOrder": 0,
+    "projectId": null,
+    "tagId": null,
+    "nodes": [
+      {
+        "id": "approval-event",
+        "data": {
+          "type": "trigger",
+          "label": "LINK Approval (Sepolia)",
+          "config": {
+            "network": "11155111",
+            "eventName": "Approval",
+            "contractABI": "[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"spender\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Approval\",\"type\":\"event\"}]",
+            "triggerType": "Event",
+            "contractAddress": "0x779877A7B0D9E8603169DdbD7836e478b4624789"
+          },
+          "status": "idle",
+          "description": "Listens for Approval events on the LINK token"
+        },
+        "type": "trigger",
+        "position": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "id": "read-allowance",
+        "data": {
+          "type": "action",
+          "label": "Confirm new allowance",
+          "config": {
+            "abi": "[{\"constant\":true,\"inputs\":[{\"name\":\"owner\",\"type\":\"address\"},{\"name\":\"spender\",\"type\":\"address\"}],\"name\":\"allowance\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
+            "network": "11155111",
+            "actionType": "web3/read-contract",
+            "abiFunction": "allowance",
+            "functionArgs": "[\"0xC7d92E2089BfD22539553FA8ea061cB094274dc5\",\"0x000000000000000000000000000000000000dEaD\"]",
+            "contractAddress": "0x779877A7B0D9E8603169DdbD7836e478b4624789"
+          },
+          "status": "idle",
+          "description": "Read the current on-chain allowance(owner, 0xdEaD) for the demo approval"
+        },
+        "type": "action",
+        "position": {
+          "x": 252,
+          "y": 0
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1",
+        "type": "default",
+        "source": "approval-event",
+        "target": "read-allowance"
+      }
+    ],
+    "visibility": "private",
+    "enabled": false,
+    "sourceWorkflowId": null,
+    "createdAt": "2026-07-16T12:49:14.824Z",
+    "updatedAt": "2026-07-16T12:49:14.824Z",
+    "seededAt": null,
+    "isListed": false,
+    "listedSlug": null,
+    "listedAt": null,
+    "inputSchema": null,
+    "outputMapping": null,
+    "priceUsdcPerCall": null,
+    "workflowType": "read",
+    "category": null,
+    "chain": null,
+    "listingVersion": 1,
+    "deletedAt": null,
+    "deactivatedAt": null
+  },
+  "workflowId": "21tr6ym2rg3kj16lbsguh"
+}

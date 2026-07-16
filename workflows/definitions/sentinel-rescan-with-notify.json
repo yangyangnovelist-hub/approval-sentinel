@@ -1,0 +1,57 @@
+{
+  "_note": "FULL design (requires KeeperHub Pro). The HTTP Request + webhook/send-webhook actions return 402 upgrade_required on the free plan, so this variant is NOT created on KeeperHub — it documents the intended sentinel-rescan: Schedule -> call scan service -> notify. The creatable free-tier variant (Schedule -> web3 read) is sentinel-rescan.json.",
+  "name": "sentinel-rescan",
+  "description": "Weekly scheduled re-scan of a watched wallet: calls the ApprovalSentinel scan service and posts a summary notification.",
+  "enabled": true,
+  "nodes": [
+    {
+      "id": "schedule-1",
+      "type": "trigger",
+      "data": {
+        "type": "trigger",
+        "label": "Weekly Monday 09:00 UTC",
+        "description": "Fires the re-scan once a week",
+        "status": "idle",
+        "config": { "triggerType": "Schedule", "scheduleCron": "0 9 * * 1", "scheduleTimezone": "UTC" }
+      }
+    },
+    {
+      "id": "scan-call",
+      "type": "action",
+      "data": {
+        "type": "action",
+        "label": "Call scan service",
+        "description": "Re-scan the watched wallet for live ERC-20 approvals (PRO: action.http-request)",
+        "status": "idle",
+        "config": {
+          "actionType": "HTTP Request",
+          "endpoint": "https://approval-sentinel.example.com/scan",
+          "httpMethod": "POST",
+          "httpHeaders": "{\"Content-Type\":\"application/json\"}",
+          "httpBody": "{\"address\":\"0xC7d92E2089BfD22539553FA8ea061cB094274dc5\",\"chain\":\"sepolia\"}",
+          "failOnError": false
+        }
+      }
+    },
+    {
+      "id": "notify",
+      "type": "action",
+      "data": {
+        "type": "action",
+        "label": "Notify summary",
+        "description": "Post the re-scan summary to a Discord/Telegram/webhook sink (PRO: action.webhook)",
+        "status": "idle",
+        "config": {
+          "actionType": "webhook/send-webhook",
+          "webhookUrl": "https://webhook.site/approval-sentinel-demo",
+          "webhookMethod": "POST",
+          "webhookPayload": "{\"source\":\"sentinel-rescan\",\"wallet\":\"0xC7d92E2089BfD22539553FA8ea061cB094274dc5\",\"chain\":\"sepolia\",\"scanResult\":\"{{@scan-call:Call scan service.data}}\",\"triggeredAt\":\"{{@schedule-1:Weekly Monday 09:00 UTC.triggeredAt}}\"}"
+        }
+      }
+    }
+  ],
+  "edges": [
+    { "id": "e1", "type": "default", "source": "schedule-1", "target": "scan-call" },
+    { "id": "e2", "type": "default", "source": "scan-call", "target": "notify" }
+  ]
+}
