@@ -50,6 +50,43 @@ Raw notes for the "Best Onboarding UX Improvement" bounty. Timestamps are 2026-0
    confirmed the true allowance-owner by reading `allowance(owner, spender)` on-chain for both
    candidates. Suggestion: surface the effective `from` (owner) address in the execution status.
 
+## Friction points (workflow authoring — Task 2.4, 2026-07-16)
+
+8. **`ai_generate_workflow` is disabled server-side but still advertised as the primary path.**
+   `tools_documentation` says the workflow-creation flow is "call `ai_generate_workflow` with a
+   natural language prompt", and `list_action_schemas` step 2 points there too — but calling it
+   returns `503 {"error":"AI Prompt is disabled"}`. A new agent follows the documented happy path
+   straight into a dead end. Suggestion: gate the docs on the feature flag, or return a
+   `not_implemented`/`feature_disabled` code with a pointer to manual `create_workflow`.
+9. **Free plan blocks every notification/compute action, so the canonical "monitor → notify"
+   workflow can't be built at all.** `create_workflow` with `webhook/send-webhook`, `HTTP Request`,
+   or `code/run-code` returns `402 upgrade_required` (`requiredPlan: pro`). Web3 read/write actions
+   are free, but Discord/Telegram/webhook/email/HTTP/code — i.e. the entire "alert me" leg that
+   almost every monitoring template implies — are Pro-only. The gating is only discoverable by
+   attempting a create; `list_action_schemas` doesn't mark which actions need which plan.
+   Suggestion: add a `requiredPlan` field per action in `list_action_schemas`, and/or surface it in
+   `validate_workflow` so the wall is hit before build, not after.
+10. **A failed `create_workflow` still reserves its Idempotency-Key.** Our first create attempts
+    failed with `402` (Pro-gated actions). Retrying the *corrected* payload under the same
+    `idempotency_key` then returned `409 idempotency_conflict` ("reused with a different request
+    payload"). So a request that never succeeded nonetheless claimed the key, forcing a key
+    rotation after every failed attempt. Expected behavior: only a *successful* (2xx) create should
+    bind the idempotency key.
+11. **Marketplace pricing has undocumented ordering + type friction.** (a) `update_workflow_listing`
+    with `priceUsdcPerCall` as a **number** is rejected by the MCP input validator
+    (`expected string, received number`) — it must be `"0.01"`. (b) Setting the price *while listed*
+    returns `409 PRICE_CHANGE_WHILE_LISTED`; you must `unlist_workflow` → set price →
+    `list_workflow` again. Neither the tool description nor `tools_documentation` mentions the
+    string type or the unlist-first ordering.
+12. **`call_workflow` 503s on a listed-but-disabled workflow with a misleading message.** Listing a
+    workflow whose `enabled:false` succeeds, but calling it returns
+    `503 "The workflow owner has disabled this workflow."` — which reads like an owner action, not
+    a config state. `update_workflow enabled:true` fixes it. Suggestion: block listing a disabled
+    workflow, or return a clearer `workflow_disabled`/`enable_required` hint. (Positive note: once
+    enabled, `call_workflow` correctly returns a well-formed **x402 v2** payment challenge — exact
+    scheme, USDC on Base, 0.01, `bazaar.discoverable:true` — and the tool honestly states it does
+    not auto-pay, pointing to `@keeperhub/wallet` / agentcash / the UI. Good DX.)
+
 ## Verified-working quickstart (what the docs should say, condensed)
 
 ```bash
