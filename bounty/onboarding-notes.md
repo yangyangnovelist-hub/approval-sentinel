@@ -30,6 +30,25 @@ Raw notes for the "Best Onboarding UX Improvement" bounty. Timestamps are 2026-0
    missing or how to fix it. Suggestion: doctor hints per failed line.
 4. Wizard step transitions render stale content for ~2s (step-2 panel visible while URL is
    already step 3) — an automation or fast user can click the wrong button. Minor.
+5. **The Streamable-HTTP MCP transport is undocumented in the "Connect your AI agent" step
+   for raw/SDK-less clients.** A hand-rolled client must: (a) POST `initialize`, (b) read the
+   `Mcp-Session-Id` **response header**, (c) POST a `notifications/initialized` with that
+   header, and (d) send the header on every later request. Miss any of these and the server
+   answers with a generic **`{"error":"Invalid JSON body"}`** — the same message it returns
+   for an actually-malformed body — so the failure mode is indistinguishable from a JSON typo.
+   Suggestion: document the bare-HTTP handshake, and make the session/transport error distinct
+   from a JSON-parse error. (First-execution reproduction in `docs/first-execution.md`.)
+6. **`execute_contract_call` / `execute_transfer` return `{executionId, status}` with NO
+   transaction hash — even when `status` is already `"completed"` synchronously.** You must make
+   a second `get_direct_execution_status` call to obtain `transactionHash` / `transactionLink`.
+   Reasonable, but the execute response should say so (or include the hash when terminal), or an
+   agent will report "done" with no receipt. Our executor always polls to a terminal state before
+   trusting success. Minor DX.
+7. **Reconciling "which wallet sent the tx" is confusing.** `get_wallet_integration.walletAddress`
+   (the ERC-20 `allowance` owner, `0xC7d9…4dc5` in our org) differs from the execution status
+   payload's `result.executedCall.topLevelTo` (`0x5af5…f07d`, the relayer/entrypoint hop). We only
+   confirmed the true allowance-owner by reading `allowance(owner, spender)` on-chain for both
+   candidates. Suggestion: surface the effective `from` (owner) address in the execution status.
 
 ## Verified-working quickstart (what the docs should say, condensed)
 

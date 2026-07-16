@@ -45,6 +45,22 @@ Doubles as dirty-wallet approval #1. `approve(0xdEaD, MaxUint256)` on Sepolia WE
 - sponsored: `true`
 - **tx: https://sepolia.etherscan.io/tx/0x41d514652c69edfa03dd0dbbab4b9194558d18d15742274af9caa312bfcf94b8**
 
+## Execution 3 — revocation (Task 2.2, via `agent/src/revoke.ts`)
+
+The revoke executor cleared the WETH approval back to zero — driven by the integration
+test (`agent/test/revoke.integration.test.ts`), which then asserted the on-chain allowance
+is 0 with a direct viem read.
+
+- `approve(0xdEaD, 0)` on WETH `0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14`
+- calldata: `0x095ea7b3…` (approve selector), amount `0`
+- idempotency_key: `as-revoke-weth-dead-integration-01`
+- **executionId: `oex9nydnt9p32m55wh5wv`**
+- **tx: https://sepolia.etherscan.io/tx/0x1e4c1b81592ffbe70ba9be8c0d427e4f6ab3b511b03e2a6dad4381dd5698912f**
+- Post-revoke `allowance(owner, dEaD)` on WETH = `0x0` ✓
+
+LINK's approval is intentionally left dirty (MaxUint256) so the agent-harness demo
+(Task 2.3) still has a live approval to revoke.
+
 ## On-chain verification (post-approval)
 
 `allowance(0xC7d92E2089BfD22539553FA8ea061cB094274dc5, 0xdEaD)` read via public Sepolia RPC:
