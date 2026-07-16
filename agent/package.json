@@ -1,0 +1,21 @@
+{
+  "name": "@approval-sentinel/agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "KeeperHub-backed ERC-20 approval revocation executor (ApprovalSentinel)",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run --exclude '**/*.integration.test.ts'",
+    "test:integration": "vitest run test/revoke.integration.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "viem": "^2.21.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}
