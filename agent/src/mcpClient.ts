@@ -119,8 +119,8 @@ export class KeeperHubMcpClient implements RevokeExecutor {
     });
   }
 
-  /** Call a tool and return its parsed JSON payload (content[].text unwrapped). */
-  private async callTool<T>(name: string, args: Record<string, unknown>): Promise<T> {
+  /** Call any KeeperHub MCP tool and return its parsed JSON payload (content[].text unwrapped). */
+  async callTool<T>(name: string, args: Record<string, unknown>): Promise<T> {
     await this.ensureSession();
     const res = await this.fetchImpl(this.url, {
       method: 'POST',
@@ -148,7 +148,12 @@ export class KeeperHubMcpClient implements RevokeExecutor {
     if (body.result?.isError) {
       throw new Error(`KeeperHub MCP ${name} tool error: ${textPart.text}`);
     }
-    return JSON.parse(textPart.text) as T;
+    // Most tools return JSON; a few (e.g. tools_documentation) return plain text.
+    try {
+      return JSON.parse(textPart.text) as T;
+    } catch {
+      return textPart.text as unknown as T;
+    }
   }
 
   executeContractCall(params: ExecuteContractCallParams): Promise<ExecuteResult> {
