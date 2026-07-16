@@ -61,6 +61,30 @@ is 0 with a direct viem read.
 LINK's approval is intentionally left dirty (MaxUint256) so the agent-harness demo
 (Task 2.3) still has a live approval to revoke.
 
+## Execution 4 — harness smoke seed (Task 2.3)
+
+Fresh throwaway approval so the harness smoke test never touches the LINK demo
+approval: `approve(0x…beef, MaxUint256)` on Sepolia WETH.
+
+- Spender: `0x000000000000000000000000000000000000beef`
+- idempotency_key: `as-harness-smoke-weth-beef-01`
+- **executionId: `yy770wsaw9b3y9tfsdrlu`**, sponsored: `true`
+- **tx: https://sepolia.etherscan.io/tx/0x6cf33f5037abc4d06d1ae5bd24cba7b7d074e260bdecd0c0e85ccd6abb403991**
+
+## Execution 5 — agent-harness end-to-end revoke (Task 2.3 smoke test)
+
+`npx tsx agent/src/cli.ts scan-and-fix 0xC7d9…4dc5 --chain sepolia` in scripted
+orchestration mode (no ANTHROPIC_API_KEY in the environment, so no LLM was
+involved — the same gated tools, deterministic driver). The scan found both
+live approvals (LINK→dEaD, WETH→beef); the confirmation gate was answered
+"no" for LINK (kept as demo material) and "yes" for WETH→beef.
+
+- Revoked: WETH `approve(0x…beef, 0)`
+- **executionId: `i8q7efwybk9natj0eed8b`**, run: https://app.keeperhub.com/executions/i8q7efwybk9natj0eed8b
+- **tx: https://sepolia.etherscan.io/tx/0x42ba20119f8a039691cfe2a3f0e56f31a119e3c97faefa788c8be1632bdf9a4c**
+- Post-run on-chain check: `allowance(owner, 0x…beef)` on WETH = `0` ✓ and
+  `allowance(owner, 0xdEaD)` on LINK still MaxUint256 ✓ (demo approval intact).
+
 ## On-chain verification (post-approval)
 
 `allowance(0xC7d92E2089BfD22539553FA8ea061cB094274dc5, 0xdEaD)` read via public Sepolia RPC:

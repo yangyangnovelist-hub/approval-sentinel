@@ -19,7 +19,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { createInterface } from 'node:readline/promises';
+import { createInterface } from 'node:readline';
 import { createPublicClient, http, isAddress } from 'viem';
 import type { Address } from 'viem';
 import { mainnet, sepolia } from 'viem/chains';
@@ -197,11 +197,7 @@ export async function main(argv: string[]): Promise<number> {
     return 1;
   }
 
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  const io: HarnessIO = {
-    write: (line) => console.log(line),
-    ask: (question) => rl.question(question),
-  };
+  const { io, close } = makeTerminalIO();
 
   const scan = buildScanTool();
   const revoke = buildRevokeTool(khKey);
@@ -222,8 +218,48 @@ export async function main(argv: string[]): Promise<number> {
     console.error(`scan-and-fix failed: ${error instanceof Error ? error.message : String(error)}`);
     return 1;
   } finally {
-    rl.close();
+    close();
   }
+}
+
+/**
+ * Terminal IO that also works with piped stdin: lines arriving before a
+ * question is pending are buffered instead of dropped, and EOF answers every
+ * later question with "quit" — a closed stdin can never authorize a revoke.
+ */
+function makeTerminalIO(): { io: HarnessIO; close: () => void } {
+  const rl = createInterface({ input: process.stdin });
+  const buffered: string[] = [];
+  const waiters: Array<(line: string) => void> = [];
+  let closed = false;
+
+  rl.on('line', (line) => {
+    const waiter = waiters.shift();
+    if (waiter) waiter(line);
+    else buffered.push(line);
+  });
+  rl.on('close', () => {
+    closed = true;
+    while (waiters.length > 0) waiters.shift()!('quit');
+  });
+
+  const io: HarnessIO = {
+    write: (line) => console.log(line),
+    ask: (question) => {
+      process.stdout.write(question);
+      const ready = buffered.shift();
+      if (ready !== undefined) {
+        process.stdout.write(`${ready}\n`);
+        return Promise.resolve(ready);
+      }
+      if (closed) {
+        process.stdout.write('quit (stdin closed)\n');
+        return Promise.resolve('quit');
+      }
+      return new Promise((resolve) => waiters.push(resolve));
+    },
+  };
+  return { io, close: () => rl.close() };
 }
 
 const isDirectRun =

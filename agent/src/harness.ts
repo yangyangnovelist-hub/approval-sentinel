@@ -29,9 +29,11 @@ export interface HarnessIO {
 export type ScanTool = (address: Address, chain: ChainName, fromBlock?: bigint) => Promise<Finding[]>;
 export type RevokeTool = (req: { token: Address; spender: Address; chainId: string }) => Promise<RevokeResult>;
 
-export type GateDecision =
-  | { confirmed: true; result: RevokeResult }
-  | { confirmed: false; reason: 'declined' | 'quit' };
+export type GateOutcome =
+  | { status: 'revoked'; result: RevokeResult }
+  | { status: 'failed'; error: string; runUrl?: string }
+  | { status: 'declined' }
+  | { status: 'quit' };
 
 /** Only an explicit, unambiguous yes opens the gate. "ok", "sure", "yes please" do not. */
 export function isExplicitYes(answer: string): boolean {
@@ -51,14 +53,18 @@ function describeAllowance(finding: Finding): string {
 /**
  * Wraps the raw revoke tool in the confirmation gate. Returns a function that
  * (1) prints token + spender + allowance, (2) asks for explicit yes,
- * (3) executes exactly one revocation on yes, and reports the decision.
+ * (3) executes exactly one revocation on yes, and reports the outcome.
+ *
+ * Only the revoke call itself is caught (reported as `failed` with the
+ * KeeperHub run link when available); an IO/confirmation error propagates and
+ * aborts the whole run — it must never be misreported as a failed revocation.
  */
 export function createGatedRevoke(
   revoke: RevokeTool,
   chainId: string,
   io: HarnessIO,
-): (finding: Finding) => Promise<GateDecision> {
-  return async (finding: Finding): Promise<GateDecision> => {
+): (finding: Finding) => Promise<GateOutcome> {
+  return async (finding: Finding): Promise<GateOutcome> => {
     io.write('');
     io.write(`About to revoke ONE approval:`);
     io.write(`  token:     ${finding.symbol} (${finding.token})`);
@@ -67,13 +73,19 @@ export function createGatedRevoke(
     const answer = await io.ask(
       `Revoke this ${finding.symbol} approval for spender ${finding.spender}? Type "yes" to revoke, "no" to skip, "quit" to stop: `,
     );
-    if (isQuit(answer)) return { confirmed: false, reason: 'quit' };
+    if (isQuit(answer)) return { status: 'quit' };
     if (!isExplicitYes(answer)) {
       io.write('Skipped (no explicit "yes").');
-      return { confirmed: false, reason: 'declined' };
+      return { status: 'declined' };
     }
-    const result = await revoke({ token: finding.token, spender: finding.spender, chainId });
-    return { confirmed: true, result };
+    try {
+      const result = await revoke({ token: finding.token, spender: finding.spender, chainId });
+      return { status: 'revoked', result };
+    } catch (error) {
+      const runUrl = error instanceof RevokeError ? error.runUrl : undefined;
+      const message = error instanceof Error ? error.message : String(error);
+      return { status: 'failed', error: message, ...(runUrl ? { runUrl } : {}) };
+    }
   };
 }
 
@@ -130,30 +142,26 @@ export async function runScanAndFix(
 
   for (const finding of findings) {
     if (summary.quit) break;
-    let decision: GateDecision;
-    try {
-      decision = await gatedRevoke(finding);
-    } catch (error) {
-      const runUrl = error instanceof RevokeError ? error.runUrl : undefined;
-      const message = error instanceof Error ? error.message : String(error);
-      io.write(`FAILED to revoke ${finding.symbol} → ${finding.spender}: ${message}`);
-      if (runUrl) io.write(`  audit trail: ${runUrl}`);
-      summary.failed.push({ finding, error: message, ...(runUrl ? { runUrl } : {}) });
-      continue;
+    const outcome = await gatedRevoke(finding);
+    if (outcome.status === 'quit') {
+      summary.quit = true;
+      io.write('Stopping at your request. Remaining approvals were NOT touched.');
+    } else if (outcome.status === 'declined') {
+      summary.skipped.push(finding);
+    } else if (outcome.status === 'failed') {
+      io.write(`FAILED to revoke ${finding.symbol} → ${finding.spender}: ${outcome.error}`);
+      if (outcome.runUrl) io.write(`  audit trail: ${outcome.runUrl}`);
+      summary.failed.push({
+        finding,
+        error: outcome.error,
+        ...(outcome.runUrl ? { runUrl: outcome.runUrl } : {}),
+      });
+    } else {
+      summary.revoked.push({ finding, result: outcome.result });
+      io.write(`Revoked ${finding.symbol} approval for ${finding.spender}.`);
+      io.write(`  tx:        ${outcome.result.transactionLink ?? outcome.result.txHash}`);
+      io.write(`  audit run: ${outcome.result.runUrl}`);
     }
-    if (!decision.confirmed) {
-      if (decision.reason === 'quit') {
-        summary.quit = true;
-        io.write('Stopping at your request. Remaining approvals were NOT touched.');
-      } else {
-        summary.skipped.push(finding);
-      }
-      continue;
-    }
-    summary.revoked.push({ finding, result: decision.result });
-    io.write(`Revoked ${finding.symbol} approval for ${finding.spender}.`);
-    io.write(`  tx:        ${decision.result.transactionLink ?? decision.result.txHash}`);
-    io.write(`  audit run: ${decision.result.runUrl}`);
   }
 
   io.write('');
@@ -165,10 +173,7 @@ export async function runScanAndFix(
   return summary;
 }
 
-export type RevokeByAddressOutcome =
-  | { status: 'revoked'; result: RevokeResult }
-  | { status: 'declined' | 'quit' }
-  | { status: 'rejected'; error: string };
+export type RevokeByAddressOutcome = GateOutcome | { status: 'rejected'; error: string };
 
 export interface SessionTools {
   scan: ScanTool;
@@ -209,9 +214,7 @@ export function createSessionTools(deps: {
           error: `No approval for token ${token} / spender ${spender} in the last scan — run scan_approvals first and use an exact (token, spender) pair from its output.`,
         };
       }
-      const decision = await gate(finding);
-      if (!decision.confirmed) return { status: decision.reason };
-      return { status: 'revoked', result: decision.result };
+      return gate(finding);
     },
   };
 }
