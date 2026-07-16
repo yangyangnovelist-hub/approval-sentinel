@@ -1,0 +1,67 @@
+# First KeeperHub executions (Sepolia)
+
+All executions run through the KeeperHub MCP `execute_contract_call` tool
+(`https://app.keeperhub.com/mcp`, Bearer `KH_API_KEY`, server `keeperhub v1.2.0`),
+signed by the org's Turnkey-managed wallet with **sponsored gas** (testnet free tier).
+Captured 2026-07-16.
+
+## Executor wallet
+
+- Integration id: `hbbr74nwf7gmjbb8j861m` (type `web3`, from `get_wallet_integration`)
+- **Allowance-owner address: `0xC7d92E2089BfD22539553FA8ea061cB094274dc5`**
+  — this is the `owner` in every `approve()` below and the address the revoke executor
+  must target. (The status payload's `topLevelTo` `0x5af5…f07d` is the relayer/entrypoint
+  hop, not the token-allowance owner; verified on-chain via `allowance(owner, spender)`.)
+
+## Flow proven
+
+`execute_contract_call` → returns `{executionId, status}` →
+`get_direct_execution_status {execution_id}` → terminal `status: "completed"` with
+`transactionHash` + `transactionLink` + `result.success: true` + `result.sponsored: true`.
+
+## Execution 1 — first KeeperHub tx (WETH approve)
+
+Doubles as dirty-wallet approval #1. `approve(0xdEaD, MaxUint256)` on Sepolia WETH.
+
+- Contract: `0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14` (WETH, verified — ABI auto-fetched)
+- Spender: `0x000000000000000000000000000000000000dEaD`
+- Amount: `MaxUint256`
+- chain_id: `11155111`
+- idempotency_key: `as-first-weth-approve-dead-01`
+- **executionId: `ib4rj0wp2g2asgz00nivd`**
+- gasUsed: `108039`, sponsored: `true`
+- **tx: https://sepolia.etherscan.io/tx/0x10334ebfdef7b3f11e6c9787fb2ed7a4834345340e9586f28c51f6b2048d93d4**
+
+## Execution 2 — dirty-wallet approval #2 (LINK approve)
+
+`approve(0xdEaD, MaxUint256)` on Sepolia LINK.
+
+- Contract: `0x779877A7B0D9E8603169DdbD7836e478b4624789` (LINK, verified)
+- Spender: `0x000000000000000000000000000000000000dEaD`
+- Amount: `MaxUint256`
+- chain_id: `11155111`
+- idempotency_key: `as-first-link-approve-dead-01`
+- **executionId: `5zf57qaev0ifemqwhxrak`**
+- sponsored: `true`
+- **tx: https://sepolia.etherscan.io/tx/0x41d514652c69edfa03dd0dbbab4b9194558d18d15742274af9caa312bfcf94b8**
+
+## On-chain verification (post-approval)
+
+`allowance(0xC7d92E2089BfD22539553FA8ea061cB094274dc5, 0xdEaD)` read via public Sepolia RPC:
+
+- WETH → `0xff… ffff` (MaxUint256) ✓
+- LINK → `0xff… ffff` (MaxUint256) ✓
+
+This is the deterministic "dirty wallet" the revoke executor (Task 2.2) drives back to
+zero, asserted allowance == 0 in the integration test.
+
+## Notes for the agent layer
+
+- `function_args` and `abi` are JSON **strings** nested inside the tool `arguments` object,
+  not arrays/objects. e.g. `function_args: "[\"0x…dEaD\",\"1157…935\"]"`.
+- Verified contracts need no `abi` — KeeperHub auto-fetches it.
+- Poll `get_direct_execution_status` (NOT `get_execution`, which is for workflow runs).
+  In practice the execute call already returned `completed` synchronously here, but the
+  executor still polls to a terminal state before trusting the receipt.
+- Streamable-HTTP MCP requires the `Mcp-Session-Id` header from `initialize` on every
+  subsequent request, and a `notifications/initialized` before the first `tools/call`.
