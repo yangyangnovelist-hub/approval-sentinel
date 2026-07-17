@@ -34,9 +34,9 @@ KeeperHub surfaces used:
 - CLI: kh doctor drives the onboarding checks in our starter template.
 
 Verified onchain (Sepolia, all through KeeperHub, sponsored gas):
-- Revocation tx: https://sepolia.etherscan.io/tx/0x1e4c1b81592ffbe70ba9be8c0d427e4f6ab3b511b03e2a6dad4381dd5698912f (allowance asserted 0 on-chain afterwards)
+- Revocation tx: https://sepolia.etherscan.io/tx/0x1e4c1b81592ffbe70ba9be8c0d427e4f6ab3b511b03e2a6dad4381dd5698912f (allowance asserted 0 onchain afterwards)
 - End-to-end agent run (scan → confirm → revoke → verify): https://sepolia.etherscan.io/tx/0x42ba20119f8a039691cfe2a3f0e56f31a119e3c97faefa788c8be1632bdf9a4c — KeeperHub run https://app.keeperhub.com/executions/i8q7efwybk9natj0eed8b
-- Workflow execution: qs6to8r9ul1w9h1p52swb (sentinel-rescan, real on-chain read)
+- Workflow execution: qs6to8r9ul1w9h1p52swb (sentinel-rescan, real onchain read)
 
 Reliability: idempotency keys on every write, poll-to-terminal before trusting any receipt, failures always surface the KeeperHub run link, 51 automated tests (29 scanner + 22 agent incl. a live Sepolia integration test).
 
@@ -48,7 +48,7 @@ Honest limitations: LLM mode needs an ANTHROPIC_API_KEY (scripted fallback has t
 **GitHub repository**
 
 ```
-TODO — https://github.com/<your-username>/approval-sentinel  (公开后填，见下方清单第 1 步)
+TODO — https://github.com/yangyangnovelist-hub/approval-sentinel  (公开后填，见下方清单第 1 步)
 ```
 
 **Demo video URL**
@@ -92,7 +92,7 @@ Also apply for: Best Onboarding UX Improvement bounty ($1,000)
 **Bounty submission note** (if the bounty asks for a separate link/text)
 
 ```
-Onboarding report: <repo-url>/blob/main/bounty/REPORT.md — 12 reproducible friction points (severity-ranked, each with reproduction + suggested fix), a 5-minute starter template (bounty/starter-template/), and a prepared docs PR (bounty/docs-pr/) referencing KeeperHub issue #1700.
+Onboarding report: https://github.com/yangyangnovelist-hub/approval-sentinel/blob/main/bounty/REPORT.md — 12 reproducible friction points (severity-ranked, each with reproduction + suggested fix), a 5-minute starter template (bounty/starter-template/), and a prepared docs PR (bounty/docs-pr/) referencing KeeperHub issue #1700.
 ```
 
 **Team**

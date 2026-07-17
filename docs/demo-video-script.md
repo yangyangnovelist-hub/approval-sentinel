@@ -62,7 +62,7 @@ Target length 2:45–3:00. Six shots. Record at 1080p or higher, terminal font �
 
 | # | English caption | 中文操作指引 |
 | --- | --- | --- |
-| 6a | `We also filed 12 reproducible onboarding issues, with fixes and a starter template.` | 切到 `bounty/REPORT.md` 渲染页，缓慢滚动严重度表格一屏，停留 6 秒。 |
+| 6a | `We also filed 12 onboarding fixes and a starter template.` | 切到 `bounty/REPORT.md` 渲染页，缓慢滚动严重度表格一屏，停留 6 秒。 |
 | 6b | `Next: mainnet, Pro notifications, x402 self-pay. Repo in the description.` | 切回 README 的 Roadmap 小节，停留到结束。最后一帧保持 README 顶部项目名。 |
 
 ---

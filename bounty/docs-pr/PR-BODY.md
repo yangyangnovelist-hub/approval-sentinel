@@ -12,7 +12,7 @@ No code changes. No behavior changes.
 
 ## Why
 
-We onboarded from zero (fresh account → org → 2FA → API key → CLI → raw-HTTP MCP → first Sepolia execution → workflows → marketplace listing) during the Agents Onchain hackathon and logged every point of friction. The full write-up — 12 reproducible issues with severity, reproduction steps, and suggested fixes — is here: `<repo-url>/blob/main/bounty/REPORT.md`.
+We onboarded from zero (fresh account → org → 2FA → API key → CLI → raw-HTTP MCP → first Sepolia execution → workflows → marketplace listing) during the Agents Onchain hackathon and logged every point of friction. The full write-up — 12 reproducible issues with severity, reproduction steps, and suggested fixes — is here: `https://github.com/yangyangnovelist-hub/approval-sentinel/blob/main/bounty/REPORT.md`.
 
 Most of what we hit was not broken functionality but **missing documentation of working functionality**:
 
@@ -23,7 +23,7 @@ This PR is the documentation half of the onboarding friction already acknowledge
 
 ## Verification
 
-Every command and error string in the added docs was reproduced on macOS 25.3 (arm64) against `app.keeperhub.com` (server `keeperhub v1.2.0`, `kh` via Homebrew) on 2026-07-16. The bare-HTTP handshake sequence is additionally exercised end-to-end by a ~50-line dependency-free script we published in `<repo-url>/tree/main/bounty/starter-template`, which goes from an API key to a confirmed Sepolia tx hash.
+Every command and error string in the added docs was reproduced on macOS 25.3 (arm64) against `app.keeperhub.com` (server `keeperhub v1.2.0`, `kh` via Homebrew) on 2026-07-16. The bare-HTTP handshake sequence is additionally exercised end-to-end by a ~50-line dependency-free script we published in `https://github.com/yangyangnovelist-hub/approval-sentinel/tree/main/bounty/starter-template`, which goes from an API key to a confirmed Sepolia tx hash.
 
 Notes for maintainers:
 
