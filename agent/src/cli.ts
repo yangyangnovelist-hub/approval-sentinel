@@ -20,7 +20,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createInterface } from 'node:readline';
-import { createPublicClient, http, isAddress } from 'viem';
+import { createPublicClient, erc20Abi, http, isAddress } from 'viem';
 import type { Address } from 'viem';
 import { mainnet, sepolia } from 'viem/chains';
 import { scanWithClient } from '../../scanner/src/cli.js';
@@ -42,10 +42,11 @@ const here = dirname(fileURLToPath(import.meta.url));
 /** Same lookback as the scanner CLI default. */
 const DEFAULT_LOOKBACK_BLOCKS = 2_000_000n;
 
-const USAGE = `Usage: npx tsx agent/src/cli.ts scan-and-fix <address> [--chain sepolia|mainnet] [--from-block <n>]
+const USAGE = `Usage: npx tsx agent/src/cli.ts scan-and-fix <address> [--chain sepolia|mainnet] [--from-block <n> | --full-history]
 
 Scans the wallet for live ERC-20 approvals and interactively revokes the ones
-you confirm — one explicit "yes" per revocation, executed via KeeperHub.`;
+you confirm — one explicit "yes" per revocation, executed via KeeperHub.
+Use --full-history for a complete but RPC-intensive scan from block 0.`;
 
 function loadEnvKey(name: string): string | undefined {
   if (process.env[name]) return process.env[name];
@@ -70,6 +71,7 @@ function parseArgs(argv: string[]): ParsedArgs {
 
   let chain: ChainName = 'sepolia';
   let fromBlock: bigint | undefined;
+  let fullHistory = false;
   for (let i = 0; i < rest.length; i++) {
     const flag = rest[i];
     if (flag === '--chain') {
@@ -84,22 +86,30 @@ function parseArgs(argv: string[]): ParsedArgs {
         throw new Error(`--from-block expects a block number, got "${value ?? ''}"`);
       }
       fromBlock = BigInt(value);
+    } else if (flag === '--full-history') {
+      fullHistory = true;
     } else {
       throw new Error(`Unknown flag: ${flag}\n\n${USAGE}`);
     }
   }
+  if (fullHistory && fromBlock !== undefined) {
+    throw new Error('--full-history cannot be combined with --from-block');
+  }
+  if (fullHistory) fromBlock = 0n;
   return { address: address as Address, chain, ...(fromBlock !== undefined ? { fromBlock } : {}) };
+}
+
+function rpcUrlFor(chain: ChainName): string | undefined {
+  return chain === 'sepolia'
+    ? (process.env.SEPOLIA_RPC_URL ?? 'https://ethereum-sepolia-rpc.publicnode.com')
+    : process.env.MAINNET_RPC_URL;
 }
 
 function buildScanTool(): ScanTool {
   return async (address, chain, fromBlock) => {
-    const rpcUrl =
-      chain === 'sepolia'
-        ? (process.env.SEPOLIA_RPC_URL ?? 'https://ethereum-sepolia-rpc.publicnode.com')
-        : process.env.MAINNET_RPC_URL;
     const client = createPublicClient({
       chain: chain === 'mainnet' ? mainnet : sepolia,
-      transport: http(rpcUrl),
+      transport: http(rpcUrlFor(chain)),
     }) as unknown as ScannerClient;
     const latest = await client.getBlockNumber();
     const from =
@@ -108,13 +118,28 @@ function buildScanTool(): ScanTool {
   };
 }
 
-function buildRevokeTool(apiKey: string): RevokeTool {
+function buildRevokeTool(
+  apiKey: string,
+  owner: Address,
+  chainName: ChainName,
+): RevokeTool {
   const client = new KeeperHubMcpClient({ apiKey });
+  const chainClient = createPublicClient({
+    chain: chainName === 'mainnet' ? mainnet : sepolia,
+    transport: http(rpcUrlFor(chainName)),
+  });
   return (req) =>
     revokeApproval(req, client, {
       // Replay-safe: retrying the same (token, spender) on the same day replays
       // the original execution instead of spending another transaction.
       idempotencyKey: `as-agent-revoke-${req.token.toLowerCase()}-${req.spender.toLowerCase()}-${new Date().toISOString().slice(0, 10)}`,
+      verifyAllowance: () =>
+        chainClient.readContract({
+          address: req.token,
+          abi: erc20Abi,
+          functionName: 'allowance',
+          args: [owner, req.spender],
+        }),
     });
 }
 
@@ -200,7 +225,7 @@ export async function main(argv: string[]): Promise<number> {
   const { io, close } = makeTerminalIO();
 
   const scan = buildScanTool();
-  const revoke = buildRevokeTool(khKey);
+  const revoke = buildRevokeTool(khKey, parsed.address, parsed.chain);
 
   try {
     const anthropicKey = loadEnvKey('ANTHROPIC_API_KEY');

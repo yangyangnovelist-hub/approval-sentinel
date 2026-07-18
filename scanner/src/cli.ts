@@ -57,11 +57,12 @@ const defaultScan: ScanFn = async (address, chain, fromBlock) => {
   return scanWithClient(client, address, { fromBlock: from, toBlock: latest });
 };
 
-const USAGE = `Usage: sentinel scan <address> [--chain mainnet|sepolia] [--from-block <n>] [--json]
+const USAGE = `Usage: sentinel scan <address> [--chain mainnet|sepolia] [--from-block <n> | --full-history] [--json]
 
 Scans a wallet's live ERC-20 approvals and prints risk-scored findings.
   --chain       target chain (default: mainnet)
   --from-block  first block to scan (default: latest - ${DEFAULT_LOOKBACK_BLOCKS})
+  --full-history scan from block 0 (complete but RPC-intensive)
   --json        machine-readable output for agents`;
 
 interface ParsedArgs {
@@ -81,6 +82,7 @@ function parseArgs(argv: string[]): ParsedArgs {
   let chain: ChainName = 'mainnet';
   let json = false;
   let fromBlock: bigint | undefined;
+  let fullHistory = false;
 
   for (let i = 0; i < rest.length; i++) {
     const flag = rest[i];
@@ -98,10 +100,17 @@ function parseArgs(argv: string[]): ParsedArgs {
         throw new Error(`--from-block expects a block number, got "${value ?? ''}"`);
       }
       fromBlock = BigInt(value);
+    } else if (flag === '--full-history') {
+      fullHistory = true;
     } else {
       throw new Error(`Unknown flag: ${flag}\n\n${USAGE}`);
     }
   }
+
+  if (fullHistory && fromBlock !== undefined) {
+    throw new Error('--full-history cannot be combined with --from-block');
+  }
+  if (fullHistory) fromBlock = 0n;
 
   return { address: address as Address, chain, json, ...(fromBlock !== undefined ? { fromBlock } : {}) };
 }

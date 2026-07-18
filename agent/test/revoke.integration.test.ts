@@ -64,12 +64,14 @@ describe.skipIf(!apiKey)('revokeApproval — live KeeperHub + Sepolia', () => {
         idempotencyKey: 'as-revoke-weth-dead-integration-01',
         pollIntervalMs: 2_000,
         maxPollAttempts: 40,
+        verifyAllowance: () => allowance(OWNER, DEAD),
       },
     );
 
     expect(result.txHash).toMatch(/^0x[0-9a-fA-F]{64}$/);
     expect(result.runUrl).toContain(result.executionId);
     expect(result.calldata.startsWith('0x095ea7b3')).toBe(true);
+    expect(result.verifiedAllowance).toBe('0');
 
     const after = await allowance(OWNER, DEAD);
     expect(after).toBe(0n);

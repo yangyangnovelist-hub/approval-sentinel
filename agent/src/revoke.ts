@@ -20,6 +20,8 @@ export interface RevokeResult {
   calldata: Hex;
   /** Block explorer link, when KeeperHub supplies one. */
   transactionLink?: string;
+  /** Fresh on-chain allowance read after the receipt, when verification is configured. */
+  verifiedAllowance?: string;
 }
 
 export interface RevokeOptions {
@@ -31,6 +33,8 @@ export interface RevokeOptions {
   sleep?: (ms: number) => Promise<void>;
   /** Base for the run URL; execution id is appended. */
   runUrlBase?: string;
+  /** Independent on-chain allowance read performed after KeeperHub confirms the receipt. */
+  verifyAllowance?: () => Promise<bigint>;
 }
 
 /** Details attached to a failed revoke so callers can surface the KeeperHub audit trail. */
@@ -116,12 +120,32 @@ export async function revokeApproval(
         );
       }
       const transactionLink = last.transactionLink ?? last.result?.transactionLink;
+      let verifiedAllowance: string | undefined;
+      if (options.verifyAllowance) {
+        let allowance: bigint;
+        try {
+          allowance = await options.verifyAllowance();
+        } catch (error) {
+          throw new RevokeError(
+            `KeeperHub execution ${executionId} confirmed, but the on-chain allowance re-read failed: ${error instanceof Error ? error.message : String(error)} — see ${runUrl}`,
+            { executionId, runUrl, status: last },
+          );
+        }
+        if (allowance !== 0n) {
+          throw new RevokeError(
+            `KeeperHub execution ${executionId} confirmed, but the on-chain allowance is still ${allowance} — see ${runUrl}`,
+            { executionId, runUrl, status: last },
+          );
+        }
+        verifiedAllowance = allowance.toString();
+      }
       return {
         txHash,
         runUrl,
         executionId,
         calldata,
         ...(transactionLink ? { transactionLink } : {}),
+        ...(verifiedAllowance !== undefined ? { verifiedAllowance } : {}),
       };
     }
 

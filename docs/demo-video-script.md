@@ -42,7 +42,7 @@ Target length 2:45–3:00. Six shots. Record at 1080p or higher, terminal font �
 | 3a | `The agent presents each risk. Nothing executes without your explicit "yes".` | 终端输入并回车：`npx tsx agent/src/cli.ts scan-and-fix 0xC7d92E2089BfD22539553FA8ea061cB094274dc5 --chain sepolia`。会先打印 "ANTHROPIC_API_KEY not set — running scripted orchestration (no LLM)."（这行留在镜头里没问题，README 已说明）。 |
 | 3b | `One confirmation = one revocation. Enforced in code, not in a prompt.` | 等它列出发现的授权并逐条询问。看到 **LINK → 0xdEaD** 那条的确认提问（token/spender/allowance 三行 + "Type yes to revoke"）时，先停 3 秒不要动，让评委读完。 |
 | 3c | `Confirming the LINK revocation.` | 输入 `yes` 回车。如果它先问到其它授权（不该有，LINK 应是唯一剩下的），对非 LINK 的一律输入 `no`。 |
-| 3d | `KeeperHub executes approve(spender, 0). Gas sponsored. Polling to final state.` | 等待执行输出：executionId、轮询、最终 txHash + run URL。全部打印完后停 5 秒。用鼠标高亮 txHash 那一行。 |
+| 3d | `KeeperHub executes approve(spender, 0). Then Sentinel verifies allowance = 0.` | 等待执行输出：executionId、轮询、最终 txHash + run URL，以及独立 RPC 复核的 `Verified on-chain allowance: 0`。全部打印完后停 5 秒，高亮复核结果。 |
 
 ## Shot 4 — Onchain proof (1:45–2:15)
 

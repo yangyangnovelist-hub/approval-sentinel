@@ -42,8 +42,8 @@ flowchart LR
 
 Three independent units:
 
-- **`scanner/`** — TypeScript + viem. Chunked `Approval` event log scan, dedupe to latest per (token, spender), `allowance()` multicall to keep only live approvals, heuristic risk score (unlimited allowance, unknown spender, approval age, owner's live balance). CLI with `--json` for agents. Zero keys, zero writes.
-- **`agent/`** — revoke executor + harness. Builds `approve(spender, 0)` calldata with viem, submits via KeeperHub MCP `execute_contract_call`, polls `get_direct_execution_status` to a terminal state, and returns `{txHash, runUrl}`. The confirmation gate lives in code (`agent/src/harness.ts`), not in a prompt. Whichever brain drives the tools, Claude via the Agent SDK or the deterministic scripted driver, revoking without a fresh, explicit, per-approval "yes" is mechanically impossible. Only the literal answers `yes` / `y` open the gate; a closed stdin answers `quit`.
+- **`scanner/`** — TypeScript + viem. Chunked `Approval` event log scan, dedupe to latest per (token, spender), `allowance()` multicall to keep only live approvals, heuristic risk score (unlimited allowance, unknown spender, approval age, owner's live balance). The practical default scans the latest 2,000,000 blocks; `--full-history` provides complete discovery when the RPC can sustain it. CLI with `--json` for agents. Zero keys, zero writes.
+- **`agent/`** — revoke executor + harness. Builds `approve(spender, 0)` calldata with viem, submits via KeeperHub MCP `execute_contract_call`, polls `get_direct_execution_status` to a terminal state, then independently re-reads `allowance(owner, spender)` through an RPC before reporting success. The confirmation gate lives in code (`agent/src/harness.ts`), not in a prompt. Whichever brain drives the tools, Claude via the Agent SDK or the deterministic scripted driver, revoking without a fresh, explicit, per-approval "yes" is mechanically impossible. Only the literal answers `yes` / `y` open the gate; a closed stdin answers `quit`.
 - **`workflows/`** — two KeeperHub workflows authored entirely through MCP `create_workflow` (schedule-triggered rescan, `Approval`-event-triggered alert), plus the marketplace listing of the rescan at $0.01 USDC per call with a live x402 v2 payment challenge. Dependency-free `node` scripts reproduce everything.
 
 ## Judging criteria map
@@ -52,8 +52,8 @@ Three independent units:
 | --- | --- | --- |
 | **Executes onchain via KeeperHub** | Every revocation is a real `execute_contract_call` signed by the org's KeeperHub-managed Turnkey wallet, gas-sponsored. Revoke verified onchain afterwards (`allowance == 0` read via independent RPC). | Revoke tx [`0x1e4c…912f`](https://sepolia.etherscan.io/tx/0x1e4c1b81592ffbe70ba9be8c0d427e4f6ab3b511b03e2a6dad4381dd5698912f); end-to-end harness revoke tx [`0x42ba…f9a4c`](https://sepolia.etherscan.io/tx/0x42ba20119f8a039691cfe2a3f0e56f31a119e3c97faefa788c8be1632bdf9a4c) |
 | **KeeperHub surface coverage** | MCP server (17 of the 31 tools exercised — direct execution, workflow CRUD, validation, marketplace; inventory in [`docs/mcp-tools.md`](docs/mcp-tools.md)); workflow builder (2 workflows created + validated via MCP, 1 executed); marketplace (listed at $0.01, live x402 v2 challenge); `kh` CLI (`kh doctor` in onboarding + starter template). | Workflow run [`qs6to8r9ul1w9h1p52swb`](https://app.keeperhub.com/executions/qs6to8r9ul1w9h1p52swb); listing slug `approval-risk-rescan`; [`docs/workflows.md`](docs/workflows.md) |
-| **Reliability / observability** | Executor never trusts a synchronous `completed` — it polls to a terminal state and returns the KeeperHub run URL with every result and every failure. Idempotency keys on all writes (retry replays instead of double-spending). Failures surface the run link, never a fake success. 51 automated tests. | [`agent/src/revoke.ts`](agent/src/revoke.ts), [`docs/first-execution.md`](docs/first-execution.md), test table below |
-| **Usefulness** | Point it at any wallet address — the scanner needs no keys and no account. The threat (forgotten unlimited approvals) is real and ongoing; the fix (allowance → 0) is universally safe. Scripted mode means the safety-critical path has zero LLM dependency. | `npx tsx scanner/src/cli.ts scan <your-address>` |
+| **Reliability / observability** | Executor never trusts a synchronous `completed` — it polls to a terminal state, requires a transaction hash, and independently verifies the resulting allowance is zero. Idempotency keys on all writes (retry replays instead of double-spending). Failures surface the KeeperHub run link, never a fake success. 54 offline tests plus one live Sepolia integration test. | [`agent/src/revoke.ts`](agent/src/revoke.ts), [`docs/first-execution.md`](docs/first-execution.md), test table below |
+| **Usefulness** | Point it at any wallet address — the scanner needs no keys and no account. The threat (forgotten unlimited approvals) is real and ongoing; the fix (allowance → 0) is universally safe. Scripted mode means the safety-critical path has zero LLM dependency. Use `--full-history` for complete discovery rather than the fast recent-window default. | `npx tsx scanner/src/cli.ts scan <your-address> --full-history` |
 
 ## Live evidence (Sepolia, all through KeeperHub)
 
@@ -78,6 +78,7 @@ Marketplace: `sentinel-rescan` is listed as [`approval-risk-rescan`](https://app
 - **The notify leg of the workflows is Pro-gated.** On the free KeeperHub plan every notification/compute action (webhook, HTTP request, code, Discord/Telegram) returns `402 upgrade_required`. The created workflows therefore wire their real Schedule/Event triggers to a live onchain `allowance()` read instead. The full notify designs are preserved verbatim in `workflows/definitions/*-with-notify.json` and create cleanly on a Pro org with the identical MCP call.
 - **The x402 self-pay hop needs real USDC on Base.** The creator side (list, price, live challenge) is complete and verifiable now; actually paying the $0.01 requires a funded Base wallet with an x402 signer (`@keeperhub/wallet` or agentcash). No testnet path exists for the payment leg.
 - **Demo transactions are on Sepolia** (hackathon gas sponsorship covers testnets); the scanner and executor take `--chain mainnet` unchanged.
+- **The default scan is intentionally bounded** to the latest 2,000,000 blocks (roughly nine months on mainnet) so public RPC evaluation finishes reliably. Use `--full-history` or an explicit `--from-block` for older approvals.
 - `search_workflows` did not return our own listing at capture time (own-org exclusion or indexing lag); the x402 challenge is the proof the listing is live.
 
 ## Run it yourself
@@ -88,7 +89,7 @@ Prereqs: Node 20+, a KeeperHub API key in the repo root `.env` (`KH_API_KEY=kh_.
 # 1. Scan any wallet (read-only, no account, no keys)
 cd scanner && npm install
 npx tsx src/cli.ts scan 0xC7d92E2089BfD22539553FA8ea061cB094274dc5 --chain sepolia
-# add --json for machine-readable findings
+# add --json for machine-readable findings; add --full-history for complete discovery
 
 # 2. Agent: scan → explain → confirm → revoke via KeeperHub
 cd ../agent && npm install
@@ -106,8 +107,8 @@ Answer `yes` only for approvals you actually want revoked — the gate takes not
 
 | Package | Suite | Tests |
 | --- | --- | --- |
-| `scanner/` | `fetchApprovals` (chunked logs, dedupe, live-allowance filter), `riskScore` (table-driven), `cli` | **29** |
-| `agent/` | `revoke` (calldata, polling, error paths), `harness` (gate semantics: explicit-yes only, one yes = one revoke, EOF = quit) | **21** |
+| `scanner/` | `fetchApprovals` (chunked logs, dedupe, live-allowance filter), `riskScore` (table-driven), `cli` including full-history argument safety | **31** |
+| `agent/` | `revoke` (calldata, polling, independent allowance verification, error paths), `harness` (gate semantics: explicit-yes only, one yes = one revoke, EOF = quit) | **23** |
 | `agent/` | `revoke.integration` — live Sepolia revoke through KeeperHub, asserts `allowance == 0` onchain | **1** |
 
 ```bash

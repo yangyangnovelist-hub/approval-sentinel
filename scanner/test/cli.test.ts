@@ -90,6 +90,35 @@ describe('cli argument parsing and output', () => {
     expect(io.out.join('\n')).toContain('No live approvals found');
   });
 
+  it('uses block zero for an explicit full-history scan', async () => {
+    const starts: Array<bigint | undefined> = [];
+    const spyScan: ScanFn = async (_address, _chain, fromBlock) => {
+      starts.push(fromBlock);
+      return [];
+    };
+
+    const code = await runCli(
+      ['scan', OWNER, '--chain', 'mainnet', '--full-history'],
+      { scan: spyScan },
+      makeIO(),
+    );
+
+    expect(code).toBe(0);
+    expect(starts).toEqual([0n]);
+  });
+
+  it('rejects combining --full-history with --from-block', async () => {
+    const io = makeIO();
+    const code = await runCli(
+      ['scan', OWNER, '--full-history', '--from-block', '123'],
+      { scan: fixtureScan },
+      io,
+    );
+
+    expect(code).toBe(1);
+    expect(io.errors.join('\n')).toContain('cannot be combined');
+  });
+
   it('defaults to mainnet when --chain is omitted', async () => {
     const chains: string[] = [];
     const spyScan: ScanFn = async (_address, chain) => {

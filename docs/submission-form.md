@@ -38,11 +38,11 @@ Verified onchain (Sepolia, all through KeeperHub, sponsored gas):
 - End-to-end agent run (scan → confirm → revoke → verify): https://sepolia.etherscan.io/tx/0x42ba20119f8a039691cfe2a3f0e56f31a119e3c97faefa788c8be1632bdf9a4c — KeeperHub run https://app.keeperhub.com/executions/i8q7efwybk9natj0eed8b
 - Workflow execution: qs6to8r9ul1w9h1p52swb (sentinel-rescan, real onchain read)
 
-Reliability: idempotency keys on every write, poll-to-terminal before trusting any receipt, failures always surface the KeeperHub run link, 51 automated tests (29 scanner + 22 agent incl. a live Sepolia integration test).
+Reliability: idempotency keys on every write, poll-to-terminal before trusting any receipt, and an independent RPC allowance re-read before success is reported. Failures always surface the KeeperHub run link. The repository has 54 offline automated tests (31 scanner + 23 agent) plus a live Sepolia integration test that executes and verifies a revocation.
 
 Bounty (Best Onboarding UX Improvement): bounty/REPORT.md documents 12 reproducible zero-to-first-transaction friction points with severity, reproduction, and suggested fixes; bounty/starter-template/ is a 5-minute create-keeperhub-agent quickstart; bounty/docs-pr/ is a prepared upstream docs PR referencing KeeperHub issue #1700.
 
-Honest limitations: LLM mode needs an ANTHROPIC_API_KEY (scripted fallback has the same gate); workflow notify actions are Pro-gated so the free-plan workflows wire triggers to live allowance() reads, with the full notify definitions preserved in workflows/definitions/*-with-notify.json; the x402 self-pay hop needs real USDC on Base (creator side is complete and live).
+Honest limitations: LLM mode needs an ANTHROPIC_API_KEY (scripted fallback has the same gate); workflow notify actions are Pro-gated so the free-plan workflows wire triggers to live allowance() reads, with the full notify definitions preserved in workflows/definitions/*-with-notify.json; the x402 self-pay hop needs real USDC on Base (creator side is complete and live). The fast scanner default covers the latest 2,000,000 blocks; `--full-history` provides complete discovery on a capable RPC.
 ```
 
 **GitHub repository**

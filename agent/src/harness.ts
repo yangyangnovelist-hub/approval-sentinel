@@ -161,6 +161,9 @@ export async function runScanAndFix(
       io.write(`Revoked ${finding.symbol} approval for ${finding.spender}.`);
       io.write(`  tx:        ${outcome.result.transactionLink ?? outcome.result.txHash}`);
       io.write(`  audit run: ${outcome.result.runUrl}`);
+      if (outcome.result.verifiedAllowance !== undefined) {
+        io.write(`  verified:  on-chain allowance = ${outcome.result.verifiedAllowance}`);
+      }
     }
   }
 

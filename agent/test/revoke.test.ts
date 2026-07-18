@@ -137,6 +137,22 @@ describe('revokeApproval — polling to a terminal state', () => {
     const result = await revokeApproval(req, executor, { sleep: noSleep });
     expect(result.txHash).toBe(TX);
   });
+
+  it('re-reads allowance and records zero before reporting success', async () => {
+    const executor = makeExecutor({
+      submit: { executionId: 'exec_verify', status: 'completed' },
+      statuses: [
+        { executionId: 'exec_verify', status: 'completed', transactionHash: TX },
+      ],
+    });
+
+    const result = await revokeApproval(req, executor, {
+      sleep: noSleep,
+      verifyAllowance: async () => 0n,
+    });
+
+    expect(result.verifiedAllowance).toBe('0');
+  });
 });
 
 describe('revokeApproval — failure paths (never claims success without a receipt)', () => {
@@ -189,5 +205,21 @@ describe('revokeApproval — failure paths (never claims success without a recei
       revokeApproval(req, executor, { sleep: noSleep, maxPollAttempts: 3 }),
     ).rejects.toThrow(/did not reach a terminal state after 3 polls/);
     expect(executor.getDirectExecutionStatus).toHaveBeenCalledTimes(3);
+  });
+
+  it('refuses to report success when the post-transaction allowance is still non-zero', async () => {
+    const executor = makeExecutor({
+      submit: { executionId: 'exec_stale', status: 'completed' },
+      statuses: [
+        { executionId: 'exec_stale', status: 'completed', transactionHash: TX },
+      ],
+    });
+
+    await expect(
+      revokeApproval(req, executor, {
+        sleep: noSleep,
+        verifyAllowance: async () => 123n,
+      }),
+    ).rejects.toThrow(/allowance is still 123/);
   });
 });
