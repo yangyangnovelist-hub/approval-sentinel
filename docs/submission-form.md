@@ -2,7 +2,7 @@
 
 Hackathon: **KeeperHub Agents Onchain** (DoraHacks). Build window 2026-07-27 → 2026-08-13 (UTC+2). Submission needs: GitHub repo + demo video + a link to one transaction executed through KeeperHub.
 
-Copy-paste each field below into the DoraHacks BUIDL form. Fields marked `TODO` need the final URL before submitting. Exact field names on DoraHacks may differ slightly (they occasionally rename labels) — match by meaning.
+Copy-paste each field below into the DoraHacks BUIDL form. The remaining `TODO` is the demo-video URL. Exact field names on DoraHacks may differ slightly (they occasionally rename labels) — match by meaning.
 
 ---
 
@@ -48,7 +48,7 @@ Honest limitations: LLM mode needs an ANTHROPIC_API_KEY (scripted fallback has t
 **GitHub repository**
 
 ```
-TODO — https://github.com/yangyangnovelist-hub/approval-sentinel  (公开后填，见下方清单第 1 步)
+https://github.com/yangyangnovelist-hub/approval-sentinel
 ```
 
 **Demo video URL**
@@ -115,18 +115,17 @@ git ls-files | grep -i env # 应该什么都不输出（.env 没被跟踪才安�
 
 如果第二条命令有任何输出，停下来找 Claude 处理，不要推送。
 
-**第 1 步 — 把仓库推上公开 GitHub**
+**第 1 步 — 确认公开 GitHub 仓库已同步**
 
-需要先装好 GitHub CLI 并登录过（`gh auth status` 能看到绿色勾）。然后在仓库根目录跑这一条：
+仓库已经公开创建。提交前确认远端仍为 public，并推送最新提交：
 
 ```bash
 cd ~/Desktop/hackathons/approval-sentinel
-gh repo create approval-sentinel --public --source=. --remote=origin --push
+gh repo view yangyangnovelist-hub/approval-sentinel --json url,visibility
+git push origin main
 ```
 
-成功后它会打印仓库地址（形如 `https://github.com/<你的用户名>/approval-sentinel`）。把这个地址填进上面的 **GitHub repository** 字段，并替换本文件和 bounty 材料里所有 `<repo-url>` / `<your-username>` 占位。
-
-如果提示 origin 已存在（之前建过），改用：`git push origin main`。
+预期地址为 `https://github.com/yangyangnovelist-hub/approval-sentinel`，visibility 为 `PUBLIC`。
 
 **第 2 步 — 录 demo 视频**
 
