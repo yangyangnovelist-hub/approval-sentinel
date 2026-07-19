@@ -6,11 +6,15 @@ Built for the **KeeperHub Agents Onchain** hackathon (DoraHacks). Everything cla
 
 ## The problem
 
-Unlimited ERC-20 approvals are one of the largest sources of stolen funds onchain. Users sign `approve(spender, MAX_UINT256)` for a dapp, forget it, and years later an exploit of *any* approved contract drains the wallet — no new signature needed. The existing mitigations (revoke.cash-style dashboards) are manual: you have to remember to visit them, read raw addresses yourself, and click through a wallet popup per revoke. Nobody watches your approvals continuously, and nothing explains *why* a given approval is risky.
+Unlimited ERC-20 approvals are one of the largest sources of stolen funds onchain. Users sign `approve(spender, MAX_UINT256)` for a dapp, forget it, and years later an exploit of *any* approved contract drains the wallet — no new signature needed. The existing revoke dashboards are manual: you have to remember to visit them, read raw addresses yourself, and click through a wallet popup per revoke. Nobody watches your approvals continuously, and nothing explains *why* a given approval is risky.
 
 ## The solution, in one sentence
 
 ApprovalSentinel scans any wallet's live ERC-20 approvals, risk-scores and explains them, and (only after an explicit per-approval "yes") executes `approve(spender, 0)` through KeeperHub's MCP server, with KeeperHub workflows re-checking the exposure on a schedule and the scan published as a $0.01 x402 marketplace workflow.
+
+## Not just "can revoke" but a closed loop
+
+Existing revoke tools stop at connect-wallet-click-done: one-off, nothing explained, nothing left behind, nobody watching what you approve next. ApprovalSentinel closes the loop: keyless scan (an address is enough) → a plain-English reason each approval is risky → a per-approval confirmation gate → an on-chain revoke through KeeperHub → an auditable execution record → a workflow that keeps watching for new approvals. The differentiator is managing approval risk responsibly, auditably, and continuously, not the revoke call itself.
 
 ## Architecture
 
