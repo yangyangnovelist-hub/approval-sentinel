@@ -56,7 +56,7 @@ Three independent units:
 | --- | --- | --- |
 | **Executes onchain via KeeperHub** | Every revocation is a real `execute_contract_call` signed by the org's KeeperHub-managed Turnkey wallet, gas-sponsored. Revoke verified onchain afterwards (`allowance == 0` read via independent RPC). | Revoke tx [`0x1e4c…912f`](https://sepolia.etherscan.io/tx/0x1e4c1b81592ffbe70ba9be8c0d427e4f6ab3b511b03e2a6dad4381dd5698912f); end-to-end harness revoke tx [`0x42ba…f9a4c`](https://sepolia.etherscan.io/tx/0x42ba20119f8a039691cfe2a3f0e56f31a119e3c97faefa788c8be1632bdf9a4c) |
 | **KeeperHub surface coverage** | MCP server (17 of the 31 tools exercised — direct execution, workflow CRUD, validation, marketplace; inventory in [`docs/mcp-tools.md`](docs/mcp-tools.md)); workflow builder (2 workflows created + validated via MCP, 1 executed); marketplace (listed at $0.01, live x402 v2 challenge); `kh` CLI (`kh doctor` in onboarding + starter template). | Workflow run [`qs6to8r9ul1w9h1p52swb`](https://app.keeperhub.com/executions/qs6to8r9ul1w9h1p52swb); listing slug `approval-risk-rescan`; [`docs/workflows.md`](docs/workflows.md) |
-| **Reliability / observability** | Executor never trusts a synchronous `completed` — it polls to a terminal state, requires a transaction hash, and independently verifies the resulting allowance is zero. Idempotency keys on all writes (retry replays instead of double-spending). Failures surface the KeeperHub run link, never a fake success. 54 offline tests plus one live Sepolia integration test. | [`agent/src/revoke.ts`](agent/src/revoke.ts), [`docs/first-execution.md`](docs/first-execution.md), test table below |
+| **Reliability / observability** | Executor never trusts a synchronous `completed` — it polls to a terminal state, requires a transaction hash, and independently verifies the resulting allowance is zero. Idempotency keys on all writes (retry replays instead of double-spending). Failures surface the KeeperHub run link, never a fake success. 56 offline tests plus one live Sepolia integration test. | [`agent/src/revoke.ts`](agent/src/revoke.ts), [`docs/first-execution.md`](docs/first-execution.md), test table below |
 | **Usefulness** | Point it at any wallet address — the scanner needs no keys and no account. The threat (forgotten unlimited approvals) is real and ongoing; the fix (allowance → 0) is universally safe. Scripted mode means the safety-critical path has zero LLM dependency. Use `--full-history` for complete discovery rather than the fast recent-window default. | `npx tsx scanner/src/cli.ts scan <your-address> --full-history` |
 
 ## Live evidence (Sepolia, all through KeeperHub)
@@ -71,8 +71,9 @@ Org wallet (allowance owner): `0xC7d92E2089BfD22539553FA8ea061cB094274dc5`. All 
 | 4 | Harness smoke seed: WETH `approve(0x…beef, MaxUint256)` | `yy770wsaw9b3y9tfsdrlu` | [`0x6cf3…3991`](https://sepolia.etherscan.io/tx/0x6cf33f5037abc4d06d1ae5bd24cba7b7d074e260bdecd0c0e85ccd6abb403991) |
 | 5 | **End-to-end harness revoke** (scan → confirm → revoke → verify) | [`i8q7efwybk9natj0eed8b`](https://app.keeperhub.com/executions/i8q7efwybk9natj0eed8b) | [`0x42ba…f9a4c`](https://sepolia.etherscan.io/tx/0x42ba20119f8a039691cfe2a3f0e56f31a119e3c97faefa788c8be1632bdf9a4c) |
 | 6 | Workflow `sentinel-rescan` real execution (reads the live LINK exposure) | `qs6to8r9ul1w9h1p52swb` / run `wrun_01KXNFK1X9G51JJY0VY9SJRQ3Q` | onchain read: returned `2^256-1` |
+| 7 | **Recorded demo revoke**: LINK allowance → 0, independently verified onchain | [`om0hzmq7zo3fbxbb0syqy`](https://app.keeperhub.com/executions/om0hzmq7zo3fbxbb0syqy) | [`0x5411…9277`](https://sepolia.etherscan.io/tx/0x5411a65a03794cf1b9df0d743d8ce6ca9c119a67ff171f07467219d84c179277) |
 
-The LINK → `0xdEaD` unlimited approval is **deliberately left live** so the demo (and you) can watch the agent find and revoke a real exposure. The scheduled workflow re-reads exactly that allowance.
+The recorded demo closes the seeded LINK → `0xdEaD` exposure. Etherscan's emitted `Approval` event records the wallet as owner, `0xdEaD` as spender, and `value = 0`; the agent also independently re-read the allowance before reporting success.
 
 Marketplace: `sentinel-rescan` is listed as [`approval-risk-rescan`](https://app.keeperhub.com/api/mcp/workflows/approval-risk-rescan/call) at $0.01 USDC per call; `call_workflow` returns a well-formed x402 v2 challenge (exact scheme, USDC on Base, `bazaar.discoverable: true`) — reproduced verbatim in [`docs/workflows.md`](docs/workflows.md).
 
@@ -94,6 +95,7 @@ Prereqs: Node 20+, a KeeperHub API key in the repo root `.env` (`KH_API_KEY=kh_.
 cd scanner && npm install
 npx tsx src/cli.ts scan 0xC7d92E2089BfD22539553FA8ea061cB094274dc5 --chain sepolia
 # add --json for machine-readable findings; add --full-history for complete discovery
+# use --from-block N --to-block N for a fast, deterministic replay of a known event range
 
 # 2. Agent: scan → explain → confirm → revoke via KeeperHub
 cd ../agent && npm install

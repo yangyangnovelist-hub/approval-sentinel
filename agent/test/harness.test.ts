@@ -81,6 +81,18 @@ describe('isExplicitYes', () => {
 });
 
 describe('runScanAndFix — confirmation gate', () => {
+  it('passes explicit block bounds to the scanner', async () => {
+    const scan = vi.fn(async () => []) as ScanTool;
+    const revoke = vi.fn() as unknown as RevokeTool;
+
+    await runScanAndFix(
+      { ...opts, fromBlock: 11284422n, toBlock: 11284422n },
+      { scan, revoke, io: makeIO([]) },
+    );
+
+    expect(scan).toHaveBeenCalledWith(OWNER, 'sepolia', 11284422n, 11284422n);
+  });
+
   it('reports clean and never asks or revokes when there are no findings', async () => {
     const scan: ScanTool = vi.fn(async () => []);
     const revoke = vi.fn() as unknown as RevokeTool;

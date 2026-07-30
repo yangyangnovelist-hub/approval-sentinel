@@ -24,6 +24,7 @@ export type ScanFn = (
   address: Address,
   chain: ChainName,
   fromBlock?: bigint,
+  toBlock?: bigint,
 ) => Promise<Finding[]>;
 
 /** Full read-only pipeline: logs -> live allowances -> enrichment -> scored findings. */
@@ -46,22 +47,27 @@ export async function scanWithClient(
   );
 }
 
-const defaultScan: ScanFn = async (address, chain, fromBlock) => {
+const defaultScan: ScanFn = async (address, chain, fromBlock, toBlock) => {
+  const rpcUrl =
+    chain === 'mainnet'
+      ? (process.env.MAINNET_RPC_URL ?? 'https://ethereum-rpc.publicnode.com')
+      : (process.env.SEPOLIA_RPC_URL ?? 'https://11155111.rpc.thirdweb.com');
   const client = createPublicClient({
     chain: chain === 'mainnet' ? mainnet : sepolia,
-    transport: http(),
+    transport: http(rpcUrl),
   }) as unknown as ScannerClient;
-  const latest = await client.getBlockNumber();
+  const latest = toBlock ?? (await client.getBlockNumber());
   const from =
     fromBlock ?? (latest > DEFAULT_LOOKBACK_BLOCKS ? latest - DEFAULT_LOOKBACK_BLOCKS : 0n);
   return scanWithClient(client, address, { fromBlock: from, toBlock: latest });
 };
 
-const USAGE = `Usage: sentinel scan <address> [--chain mainnet|sepolia] [--from-block <n> | --full-history] [--json]
+const USAGE = `Usage: sentinel scan <address> [--chain mainnet|sepolia] [--from-block <n> | --full-history] [--to-block <n>] [--json]
 
 Scans a wallet's live ERC-20 approvals and prints risk-scored findings.
   --chain       target chain (default: mainnet)
   --from-block  first block to scan (default: latest - ${DEFAULT_LOOKBACK_BLOCKS})
+  --to-block    last block to scan (default: latest)
   --full-history scan from block 0 (complete but RPC-intensive)
   --json        machine-readable output for agents`;
 
@@ -70,6 +76,7 @@ interface ParsedArgs {
   chain: ChainName;
   json: boolean;
   fromBlock?: bigint;
+  toBlock?: bigint;
 }
 
 function parseArgs(argv: string[]): ParsedArgs {
@@ -82,6 +89,7 @@ function parseArgs(argv: string[]): ParsedArgs {
   let chain: ChainName = 'mainnet';
   let json = false;
   let fromBlock: bigint | undefined;
+  let toBlock: bigint | undefined;
   let fullHistory = false;
 
   for (let i = 0; i < rest.length; i++) {
@@ -100,6 +108,12 @@ function parseArgs(argv: string[]): ParsedArgs {
         throw new Error(`--from-block expects a block number, got "${value ?? ''}"`);
       }
       fromBlock = BigInt(value);
+    } else if (flag === '--to-block') {
+      const value = rest[++i];
+      if (value === undefined || !/^\d+$/.test(value)) {
+        throw new Error(`--to-block expects a block number, got "${value ?? ''}"`);
+      }
+      toBlock = BigInt(value);
     } else if (flag === '--full-history') {
       fullHistory = true;
     } else {
@@ -111,8 +125,17 @@ function parseArgs(argv: string[]): ParsedArgs {
     throw new Error('--full-history cannot be combined with --from-block');
   }
   if (fullHistory) fromBlock = 0n;
+  if (fromBlock !== undefined && toBlock !== undefined && toBlock < fromBlock) {
+    throw new Error('--to-block must be greater than or equal to --from-block');
+  }
 
-  return { address: address as Address, chain, json, ...(fromBlock !== undefined ? { fromBlock } : {}) };
+  return {
+    address: address as Address,
+    chain,
+    json,
+    ...(fromBlock !== undefined ? { fromBlock } : {}),
+    ...(toBlock !== undefined ? { toBlock } : {}),
+  };
 }
 
 function formatAllowance(finding: Finding): string {
@@ -155,7 +178,7 @@ export async function runCli(
   }
 
   try {
-    const findings = await deps.scan(parsed.address, parsed.chain, parsed.fromBlock);
+    const findings = await deps.scan(parsed.address, parsed.chain, parsed.fromBlock, parsed.toBlock);
     if (parsed.json) {
       io.write(JSON.stringify(findings, null, 2));
     } else if (findings.length === 0) {

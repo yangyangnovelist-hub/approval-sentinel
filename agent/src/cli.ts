@@ -1,7 +1,7 @@
 /**
  * ApprovalSentinel agent CLI (Task 2.3).
  *
- *   npx tsx agent/src/cli.ts scan-and-fix <address> [--chain sepolia|mainnet] [--from-block <n>]
+ *   npx tsx agent/src/cli.ts scan-and-fix <address> [--chain sepolia|mainnet] [--from-block <n>] [--to-block <n>]
  *
  * Two modes, picked automatically:
  *   - LLM mode (ANTHROPIC_API_KEY set): Claude Agent SDK session with a
@@ -42,7 +42,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 /** Same lookback as the scanner CLI default. */
 const DEFAULT_LOOKBACK_BLOCKS = 2_000_000n;
 
-const USAGE = `Usage: npx tsx agent/src/cli.ts scan-and-fix <address> [--chain sepolia|mainnet] [--from-block <n> | --full-history]
+const USAGE = `Usage: npx tsx agent/src/cli.ts scan-and-fix <address> [--chain sepolia|mainnet] [--from-block <n> | --full-history] [--to-block <n>]
 
 Scans the wallet for live ERC-20 approvals and interactively revokes the ones
 you confirm — one explicit "yes" per revocation, executed via KeeperHub.
@@ -62,6 +62,7 @@ interface ParsedArgs {
   address: Address;
   chain: ChainName;
   fromBlock?: bigint;
+  toBlock?: bigint;
 }
 
 function parseArgs(argv: string[]): ParsedArgs {
@@ -71,6 +72,7 @@ function parseArgs(argv: string[]): ParsedArgs {
 
   let chain: ChainName = 'sepolia';
   let fromBlock: bigint | undefined;
+  let toBlock: bigint | undefined;
   let fullHistory = false;
   for (let i = 0; i < rest.length; i++) {
     const flag = rest[i];
@@ -86,6 +88,12 @@ function parseArgs(argv: string[]): ParsedArgs {
         throw new Error(`--from-block expects a block number, got "${value ?? ''}"`);
       }
       fromBlock = BigInt(value);
+    } else if (flag === '--to-block') {
+      const value = rest[++i];
+      if (value === undefined || !/^\d+$/.test(value)) {
+        throw new Error(`--to-block expects a block number, got "${value ?? ''}"`);
+      }
+      toBlock = BigInt(value);
     } else if (flag === '--full-history') {
       fullHistory = true;
     } else {
@@ -96,22 +104,30 @@ function parseArgs(argv: string[]): ParsedArgs {
     throw new Error('--full-history cannot be combined with --from-block');
   }
   if (fullHistory) fromBlock = 0n;
-  return { address: address as Address, chain, ...(fromBlock !== undefined ? { fromBlock } : {}) };
+  if (fromBlock !== undefined && toBlock !== undefined && toBlock < fromBlock) {
+    throw new Error('--to-block must be greater than or equal to --from-block');
+  }
+  return {
+    address: address as Address,
+    chain,
+    ...(fromBlock !== undefined ? { fromBlock } : {}),
+    ...(toBlock !== undefined ? { toBlock } : {}),
+  };
 }
 
 function rpcUrlFor(chain: ChainName): string | undefined {
   return chain === 'sepolia'
-    ? (process.env.SEPOLIA_RPC_URL ?? 'https://ethereum-sepolia-rpc.publicnode.com')
+    ? (process.env.SEPOLIA_RPC_URL ?? 'https://11155111.rpc.thirdweb.com')
     : process.env.MAINNET_RPC_URL;
 }
 
 function buildScanTool(): ScanTool {
-  return async (address, chain, fromBlock) => {
+  return async (address, chain, fromBlock, toBlock) => {
     const client = createPublicClient({
       chain: chain === 'mainnet' ? mainnet : sepolia,
       transport: http(rpcUrlFor(chain)),
     }) as unknown as ScannerClient;
-    const latest = await client.getBlockNumber();
+    const latest = toBlock ?? (await client.getBlockNumber());
     const from =
       fromBlock ?? (latest > DEFAULT_LOOKBACK_BLOCKS ? latest - DEFAULT_LOOKBACK_BLOCKS : 0n);
     return scanWithClient(client, address, { fromBlock: from, toBlock: latest });
@@ -166,7 +182,12 @@ async function runLlmMode(
           chain: z.enum(['mainnet', 'sepolia']).describe('Chain to scan'),
         },
         async (args) => {
-          const findings = await tools.scan(args.address as Address, args.chain, parsed.fromBlock);
+          const findings = await tools.scan(
+            args.address as Address,
+            args.chain,
+            parsed.fromBlock,
+            parsed.toBlock,
+          );
           return { content: [{ type: 'text', text: JSON.stringify(findings, null, 2) }] };
         },
       ),

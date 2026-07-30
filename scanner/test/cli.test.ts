@@ -72,22 +72,46 @@ describe('cli argument parsing and output', () => {
     expect(parsed[1]!.spenderLabel).toBe('Uniswap V2 Router 02');
   });
 
-  it('passes chain and --from-block through to the scan function', async () => {
-    const calls: Array<{ address: string; chain: string; fromBlock?: bigint }> = [];
-    const spyScan: ScanFn = async (address, chain, fromBlock) => {
-      calls.push({ address, chain, ...(fromBlock !== undefined ? { fromBlock } : {}) });
+  it('passes chain and explicit block bounds through to the scan function', async () => {
+    const calls: Array<{
+      address: string;
+      chain: string;
+      fromBlock?: bigint;
+      toBlock?: bigint;
+    }> = [];
+    const spyScan: ScanFn = async (address, chain, fromBlock, toBlock) => {
+      calls.push({
+        address,
+        chain,
+        ...(fromBlock !== undefined ? { fromBlock } : {}),
+        ...(toBlock !== undefined ? { toBlock } : {}),
+      });
       return [];
     };
     const io = makeIO();
     const code = await runCli(
-      ['scan', OWNER, '--chain', 'sepolia', '--from-block', '123'],
+      ['scan', OWNER, '--chain', 'sepolia', '--from-block', '123', '--to-block', '456'],
       { scan: spyScan },
       io,
     );
 
     expect(code).toBe(0);
-    expect(calls).toEqual([{ address: OWNER, chain: 'sepolia', fromBlock: 123n }]);
+    expect(calls).toEqual([
+      { address: OWNER, chain: 'sepolia', fromBlock: 123n, toBlock: 456n },
+    ]);
     expect(io.out.join('\n')).toContain('No live approvals found');
+  });
+
+  it('rejects an end block before the start block', async () => {
+    const io = makeIO();
+    const code = await runCli(
+      ['scan', OWNER, '--from-block', '456', '--to-block', '123'],
+      { scan: fixtureScan },
+      io,
+    );
+
+    expect(code).toBe(1);
+    expect(io.errors.join('\n')).toContain('greater than or equal');
   });
 
   it('uses block zero for an explicit full-history scan', async () => {

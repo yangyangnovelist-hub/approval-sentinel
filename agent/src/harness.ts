@@ -26,7 +26,12 @@ export interface HarnessIO {
   ask(question: string): Promise<string>;
 }
 
-export type ScanTool = (address: Address, chain: ChainName, fromBlock?: bigint) => Promise<Finding[]>;
+export type ScanTool = (
+  address: Address,
+  chain: ChainName,
+  fromBlock?: bigint,
+  toBlock?: bigint,
+) => Promise<Finding[]>;
 export type RevokeTool = (req: { token: Address; spender: Address; chainId: string }) => Promise<RevokeResult>;
 
 export type GateOutcome =
@@ -101,6 +106,7 @@ export interface ScanAndFixOptions {
   address: Address;
   chain: ChainName;
   fromBlock?: bigint;
+  toBlock?: bigint;
 }
 
 const CHAIN_IDS: Record<ChainName, string> = { mainnet: '1', sepolia: '11155111' };
@@ -129,7 +135,7 @@ export async function runScanAndFix(
   const { io } = deps;
   const chainId = CHAIN_IDS[opts.chain];
   io.write(`Scanning ${opts.address} on ${opts.chain} for live ERC-20 approvals…`);
-  const findings = await deps.scan(opts.address, opts.chain, opts.fromBlock);
+  const findings = await deps.scan(opts.address, opts.chain, opts.fromBlock, opts.toBlock);
 
   const summary: ScanAndFixSummary = { findings, revoked: [], skipped: [], failed: [], quit: false };
   if (findings.length === 0) {

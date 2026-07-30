@@ -6,8 +6,8 @@ export const approvalEvent = parseAbiItem(
   'event Approval(address indexed owner, address indexed spender, uint256 value)',
 );
 
-/** Default getLogs chunk — public RPCs commonly cap eth_getLogs ranges around 10k blocks. */
-export const DEFAULT_CHUNK_SIZE = 10_000n;
+/** Conservative getLogs chunk supported by the public Sepolia RPC used in the demo. */
+export const DEFAULT_CHUNK_SIZE = 1_000n;
 
 export interface ApprovalLog {
   address: Address;
