@@ -137,7 +137,7 @@ Everything under [`bounty/`](bounty/):
 
 - [`bounty/REPORT.md`](bounty/REPORT.md) — 12 reproducible friction points from a real zero-to-first-transaction run, severity-ranked, each with reproduction, impact, and a suggested fix.
 - [`bounty/starter-template/`](bounty/starter-template/) — `create-keeperhub-agent`: 5 minutes from nothing to a first KeeperHub-executed Sepolia transaction, ~40 lines of dependency-free Node.
-- [`bounty/docs-pr/`](bounty/docs-pr/) — prepared upstream docs PR (troubleshooting guide, `.env.example`, CONTRIBUTING stub) referencing KeeperHub issue #1700.
+- [`KeeperHub/keeperhub#1856`](https://github.com/KeeperHub/keeperhub/pull/1856) — submitted upstream self-hosting troubleshooting guide based on the reproduced onboarding run. Additional `.env.example` and CONTRIBUTING drafts remain in [`bounty/docs-pr/`](bounty/docs-pr/) because upstream now has newer project-specific versions.
 
 ## Roadmap
 

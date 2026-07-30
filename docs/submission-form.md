@@ -92,7 +92,7 @@ Also apply for: Best Onboarding UX Improvement bounty ($1,000)
 **Bounty submission note** (if the bounty asks for a separate link/text)
 
 ```
-Onboarding report: https://github.com/yangyangnovelist-hub/approval-sentinel/blob/main/bounty/REPORT.md — 12 reproducible friction points (severity-ranked, each with reproduction + suggested fix), a 5-minute starter template (bounty/starter-template/), and a prepared docs PR (bounty/docs-pr/) referencing KeeperHub issue #1700.
+Onboarding report: https://github.com/yangyangnovelist-hub/approval-sentinel/blob/main/bounty/REPORT.md — 12 reproducible friction points (severity-ranked, each with reproduction + suggested fix), a 5-minute starter template (bounty/starter-template/), and upstream self-hosting troubleshooting PR https://github.com/KeeperHub/keeperhub/pull/1856 referencing KeeperHub issue #1700.
 ```
 
 **Team**
