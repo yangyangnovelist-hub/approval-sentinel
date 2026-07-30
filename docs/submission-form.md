@@ -98,7 +98,7 @@ Onboarding report: https://github.com/yangyangnovelist-hub/approval-sentinel/blo
 **Team**
 
 ```
-Solo builder. AI-assisted: all code and docs written with Claude; human owner ran accounts, keys, funding decisions, recording, and submission.
+Solo builder.
 ```
 
 ---
@@ -113,7 +113,7 @@ git status                 # 应显示 nothing to commit, working tree clean
 git ls-files | grep -i env # 应该什么都不输出（.env 没被跟踪才安全）
 ```
 
-如果第二条命令有任何输出，停下来找 Claude 处理，不要推送。
+如果第二条命令有任何输出，停止操作并排查，不要推送。
 
 **第 1 步 — 确认公开 GitHub 仓库已同步**
 
@@ -143,4 +143,4 @@ git push origin main
 **第 4 步 — 提交后**
 
 - 在 DoraHacks 上确认 BUIDL 状态为已提交/可见。
-- 7/27 之后再处理 `bounty/docs-pr/`（给 KeeperHub 官方仓库发 PR，材料已备好，到时找 Claude 执行 fork + push）。
+- 7/27 之后再处理 `bounty/docs-pr/`（给 KeeperHub 官方仓库发 PR，材料已备好，再执行 fork + push）。

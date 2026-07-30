@@ -113,8 +113,7 @@ GitHub repo link, demo video showing an on-chain execution through KeeperHub,
 link to a transaction executed via KeeperHub. 18+, sanctions-restricted
 regions ineligible (user confirms own eligibility at registration).
 
-## Division of labor
+## Project ownership
 
-Claude writes all code, docs, PR content, and the English demo script. User
-handles: DoraHacks + KeeperHub account creation, API key creation (2FA),
-wallet funding decisions, demo recording, and final submission clicks.
+Solo-built project. Account creation, key management, wallet funding decisions,
+demo recording, and final submission remain explicit human-controlled actions.

@@ -14,7 +14,7 @@ Ready-to-open PR material for the official `KeeperHub/keeperhub` repository, par
 
 ## How to open the PR (after 07-27) — 中文操作步骤
 
-这些都可以让 Claude 代跑，用户只需要确认：
+按下面步骤执行，并在提交前人工确认：
 
 1. `gh repo fork KeeperHub/keeperhub --clone` （fork 并克隆官方仓库）
 2. 新建分支 `docs/onboarding-troubleshooting`
