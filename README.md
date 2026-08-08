@@ -4,6 +4,8 @@ An agent that finds dangerous ERC-20 approvals and revokes them onchain through 
 
 Built for the **KeeperHub Agents Onchain** hackathon (DoraHacks). Everything claimed below is backed by a Sepolia transaction, a KeeperHub execution id, or a test you can run.
 
+**Demo:** [watch the onchain scan → confirm → revoke → verify flow](https://youtu.be/N19HPLsPEzY)
+
 ## The problem
 
 Unlimited ERC-20 approvals are one of the largest sources of stolen funds onchain. Users sign `approve(spender, MAX_UINT256)` for a dapp, forget it, and years later an exploit of *any* approved contract drains the wallet — no new signature needed. The existing revoke dashboards are manual: you have to remember to visit them, read raw addresses yourself, and click through a wallet popup per revoke. Nobody watches your approvals continuously, and nothing explains *why* a given approval is risky.
@@ -113,8 +115,8 @@ Answer `yes` only for approvals you actually want revoked — the gate takes not
 
 | Package | Suite | Tests |
 | --- | --- | --- |
-| `scanner/` | `fetchApprovals` (chunked logs, dedupe, live-allowance filter), `riskScore` (table-driven), `cli` including full-history argument safety | **31** |
-| `agent/` | `revoke` (calldata, polling, independent allowance verification, error paths), `harness` (gate semantics: explicit-yes only, one yes = one revoke, EOF = quit) | **23** |
+| `scanner/` | `fetchApprovals` (chunked logs, dedupe, live-allowance filter), `riskScore` (table-driven), `cli` including full-history argument safety | **32** |
+| `agent/` | `revoke` (calldata, polling, independent allowance verification, error paths), `harness` (gate semantics: explicit-yes only, one yes = one revoke, EOF = quit) | **24** |
 | `agent/` | `revoke.integration` — live Sepolia revoke through KeeperHub, asserts `allowance == 0` onchain | **1** |
 
 ```bash
@@ -139,7 +141,11 @@ Everything under [`bounty/`](bounty/):
 
 - [`bounty/REPORT.md`](bounty/REPORT.md) — 12 reproducible friction points from a real zero-to-first-transaction run, severity-ranked, each with reproduction, impact, and a suggested fix.
 - [`bounty/starter-template/`](bounty/starter-template/) — `create-keeperhub-agent`: 5 minutes from nothing to a first KeeperHub-executed Sepolia transaction, ~40 lines of dependency-free Node.
-- [`KeeperHub/keeperhub#1856`](https://github.com/KeeperHub/keeperhub/pull/1856) — submitted upstream self-hosting troubleshooting guide based on the reproduced onboarding run. Additional `.env.example` and CONTRIBUTING drafts remain in [`bounty/docs-pr/`](bounty/docs-pr/) because upstream now has newer project-specific versions.
+- [`KeeperHub/keeperhub#1856`](https://github.com/KeeperHub/keeperhub/pull/1856) — an upstream onboarding-troubleshooting contribution that received detailed maintainer review; the reusable report and corrected drafts remain in this repository even though the PR was not merged.
+
+## License
+
+Apache-2.0. See [LICENSE](LICENSE).
 
 ## Roadmap
 

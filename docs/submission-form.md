@@ -2,7 +2,7 @@
 
 Hackathon: **KeeperHub Agents Onchain** (DoraHacks). Build window 2026-07-27 → 2026-08-13 (UTC+2). Submission needs: GitHub repo + demo video + a link to one transaction executed through KeeperHub.
 
-Copy-paste each field below into the DoraHacks BUIDL form. The remaining `TODO` is the demo-video URL. Exact field names on DoraHacks may differ slightly (they occasionally rename labels) — match by meaning.
+Copy-paste each field below into the DoraHacks BUIDL form. Exact field names on DoraHacks may differ slightly (they occasionally rename labels) — match by meaning.
 
 ---
 
@@ -38,7 +38,7 @@ Verified onchain (Sepolia, all through KeeperHub, sponsored gas):
 - End-to-end agent run (scan → confirm → revoke → verify): https://sepolia.etherscan.io/tx/0x42ba20119f8a039691cfe2a3f0e56f31a119e3c97faefa788c8be1632bdf9a4c — KeeperHub run https://app.keeperhub.com/executions/i8q7efwybk9natj0eed8b
 - Workflow execution: qs6to8r9ul1w9h1p52swb (sentinel-rescan, real onchain read)
 
-Reliability: idempotency keys on every write, poll-to-terminal before trusting any receipt, and an independent RPC allowance re-read before success is reported. Failures always surface the KeeperHub run link. The repository has 54 offline automated tests (31 scanner + 23 agent) plus a live Sepolia integration test that executes and verifies a revocation.
+Reliability: idempotency keys on every write, poll-to-terminal before trusting any receipt, and an independent RPC allowance re-read before success is reported. Failures always surface the KeeperHub run link. The repository has 56 offline automated tests (32 scanner + 24 agent) plus a live Sepolia integration test that executes and verifies a revocation.
 
 Bounty (Best Onboarding UX Improvement): bounty/REPORT.md documents 12 reproducible zero-to-first-transaction friction points with severity, reproduction, and suggested fixes; bounty/starter-template/ is a 5-minute create-keeperhub-agent quickstart; bounty/docs-pr/ is a prepared upstream docs PR referencing KeeperHub issue #1700.
 
@@ -54,7 +54,7 @@ https://github.com/yangyangnovelist-hub/approval-sentinel
 **Demo video URL**
 
 ```
-TODO — YouTube/Loom 链接（录完上传后填）
+https://youtu.be/N19HPLsPEzY
 ```
 
 **Transaction executed via KeeperHub** (the required tx-link field)
@@ -92,7 +92,7 @@ Also apply for: Best Onboarding UX Improvement bounty ($1,000)
 **Bounty submission note** (if the bounty asks for a separate link/text)
 
 ```
-Onboarding report: https://github.com/yangyangnovelist-hub/approval-sentinel/blob/main/bounty/REPORT.md — 12 reproducible friction points (severity-ranked, each with reproduction + suggested fix), a 5-minute starter template (bounty/starter-template/), and upstream self-hosting troubleshooting PR https://github.com/KeeperHub/keeperhub/pull/1856 referencing KeeperHub issue #1700.
+Onboarding report: https://github.com/yangyangnovelist-hub/approval-sentinel/blob/main/bounty/REPORT.md — 12 reproducible friction points (severity-ranked, each with reproduction + suggested fix), a 5-minute starter template (bounty/starter-template/), and an upstream onboarding-troubleshooting contribution that received detailed maintainer review: https://github.com/KeeperHub/keeperhub/pull/1856.
 ```
 
 **Team**
