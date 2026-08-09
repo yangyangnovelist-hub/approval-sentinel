@@ -15,8 +15,31 @@
  */
 
 import type { Address } from 'viem';
+import { SpanStatusCode, trace, type Attributes } from '@opentelemetry/api';
 import type { Finding } from '../../scanner/src/riskScore.js';
 import { RevokeError, type RevokeResult } from './revoke.js';
+
+const tracer = trace.getTracer('approval-sentinel-agent', '0.2.0');
+
+async function traced<T>(
+  name: string,
+  attributes: Attributes,
+  operation: () => Promise<T>,
+): Promise<T> {
+  return tracer.startActiveSpan(name, { attributes }, async (span) => {
+    try {
+      const result = await operation();
+      span.setStatus({ code: SpanStatusCode.OK });
+      return result;
+    } catch (error) {
+      span.recordException(error instanceof Error ? error : new Error(String(error)));
+      span.setStatus({ code: SpanStatusCode.ERROR, message: error instanceof Error ? error.message : String(error) });
+      throw error;
+    } finally {
+      span.end();
+    }
+  });
+}
 
 export type ChainName = 'mainnet' | 'sepolia';
 
@@ -78,13 +101,28 @@ export function createGatedRevoke(
     const answer = await io.ask(
       `Revoke this ${finding.symbol} approval for spender ${finding.spender}? Type "yes" to revoke, "no" to skip, "quit" to stop: `,
     );
+    trace.getActiveSpan()?.addEvent('approval.confirmation', {
+      'approval.decision': answer.trim().toLowerCase(),
+      'approval.explicit_yes': isExplicitYes(answer),
+      'approval.token': finding.token,
+      'approval.spender': finding.spender,
+    });
     if (isQuit(answer)) return { status: 'quit' };
     if (!isExplicitYes(answer)) {
       io.write('Skipped (no explicit "yes").');
       return { status: 'declined' };
     }
     try {
-      const result = await revoke({ token: finding.token, spender: finding.spender, chainId });
+      const result = await traced(
+        'tool.revoke_approval',
+        {
+          'tool.name': 'revoke_approval',
+          'approval.token': finding.token,
+          'approval.spender': finding.spender,
+          'blockchain.chain_id': chainId,
+        },
+        () => revoke({ token: finding.token, spender: finding.spender, chainId }),
+      );
       return { status: 'revoked', result };
     } catch (error) {
       const runUrl = error instanceof RevokeError ? error.runUrl : undefined;
@@ -128,14 +166,22 @@ function presentFindings(findings: Finding[], io: HarnessIO): void {
  * gate → revoke on explicit yes. Used directly when no LLM is available, and
  * unit-tested with mocked tools to pin the gate semantics.
  */
-export async function runScanAndFix(
+async function runScanAndFixCore(
   opts: ScanAndFixOptions,
   deps: { scan: ScanTool; revoke: RevokeTool; io: HarnessIO },
 ): Promise<ScanAndFixSummary> {
   const { io } = deps;
   const chainId = CHAIN_IDS[opts.chain];
   io.write(`Scanning ${opts.address} on ${opts.chain} for live ERC-20 approvals…`);
-  const findings = await deps.scan(opts.address, opts.chain, opts.fromBlock, opts.toBlock);
+  const findings = await traced(
+    'tool.scan_approvals',
+    {
+      'tool.name': 'scan_approvals',
+      'wallet.address': opts.address,
+      'blockchain.chain': opts.chain,
+    },
+    () => deps.scan(opts.address, opts.chain, opts.fromBlock, opts.toBlock),
+  );
 
   const summary: ScanAndFixSummary = { findings, revoked: [], skipped: [], failed: [], quit: false };
   if (findings.length === 0) {
@@ -180,6 +226,46 @@ export async function runScanAndFix(
       '.',
   );
   return summary;
+}
+
+/**
+ * OpenTelemetry-instrumented entry point. With no SDK configured the API is a
+ * no-op; tests/evaluations can install an exporter without changing business logic.
+ */
+export async function runScanAndFix(
+  opts: ScanAndFixOptions,
+  deps: { scan: ScanTool; revoke: RevokeTool; io: HarnessIO },
+): Promise<ScanAndFixSummary> {
+  return tracer.startActiveSpan(
+    'approval_sentinel.scan_and_fix',
+    {
+      attributes: {
+        'wallet.address': opts.address,
+        'blockchain.chain': opts.chain,
+        'agent.mode': 'scripted',
+      },
+    },
+    async (span) => {
+      try {
+        const summary = await runScanAndFixCore(opts, deps);
+        span.setAttributes({
+          'approval.findings': summary.findings.length,
+          'approval.revoked': summary.revoked.length,
+          'approval.skipped': summary.skipped.length,
+          'approval.failed': summary.failed.length,
+          'approval.quit': summary.quit,
+        });
+        span.setStatus({ code: SpanStatusCode.OK });
+        return summary;
+      } catch (error) {
+        span.recordException(error instanceof Error ? error : new Error(String(error)));
+        span.setStatus({ code: SpanStatusCode.ERROR, message: error instanceof Error ? error.message : String(error) });
+        throw error;
+      } finally {
+        span.end();
+      }
+    },
+  );
 }
 
 export type RevokeByAddressOutcome = GateOutcome | { status: 'rejected'; error: string };

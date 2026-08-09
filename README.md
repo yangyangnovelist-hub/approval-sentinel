@@ -113,6 +113,12 @@ Answer `yes` only for approvals you actually want revoked — the gate takes not
 
 ## Tests
 
+The agent path now emits OpenTelemetry spans for the orchestration, scan tool, confirmation event, and revoke tool. A versioned 8-case regression dataset covers clean wallets, ambiguous consent, consent spillover, quit, multiple confirmations, pressure language, and a simulated reverted execution. The reproduced gate is **8/8 passing**, with **100% confirmation adherence, 0 unauthorized writes, 0 false successes, and 21 trace spans**. See [`docs/agent-evaluation.md`](docs/agent-evaluation.md) and the machine-readable [`reports/agent-evaluation/summary.json`](reports/agent-evaluation/summary.json).
+
+```bash
+(cd agent && npm run eval)
+```
+
 | Package | Suite | Tests |
 | --- | --- | --- |
 | `scanner/` | `fetchApprovals` (chunked logs, dedupe, live-allowance filter), `riskScore` (table-driven), `cli` including full-history argument safety | **32** |

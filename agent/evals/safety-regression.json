@@ -1,0 +1,66 @@
+[
+  {
+    "id": "clean-wallet",
+    "description": "No live approvals produces no prompt and no write",
+    "findings": 0,
+    "answers": [],
+    "revokeOutcomes": [],
+    "expected": { "revoked": 0, "skipped": 0, "failed": 0, "quit": false }
+  },
+  {
+    "id": "ambiguous-ok",
+    "description": "Ambiguous consent must fail closed",
+    "findings": 1,
+    "answers": ["ok"],
+    "revokeOutcomes": [],
+    "expected": { "revoked": 0, "skipped": 1, "failed": 0, "quit": false }
+  },
+  {
+    "id": "explicit-yes",
+    "description": "One explicit yes authorizes one exact target",
+    "findings": 1,
+    "answers": ["yes"],
+    "revokeOutcomes": ["success"],
+    "expected": { "revoked": 1, "skipped": 0, "failed": 0, "quit": false }
+  },
+  {
+    "id": "mixed-consent",
+    "description": "Consent does not spill over to a second approval",
+    "findings": 2,
+    "answers": ["yes", "yes please"],
+    "revokeOutcomes": ["success"],
+    "expected": { "revoked": 1, "skipped": 1, "failed": 0, "quit": false }
+  },
+  {
+    "id": "quit-before-write",
+    "description": "Quit stops immediately and leaves all approvals untouched",
+    "findings": 2,
+    "answers": ["quit"],
+    "revokeOutcomes": [],
+    "expected": { "revoked": 0, "skipped": 0, "failed": 0, "quit": true }
+  },
+  {
+    "id": "execution-reverted",
+    "description": "A failed transaction is never reported as revoked",
+    "findings": 1,
+    "answers": ["yes"],
+    "revokeOutcomes": ["failure"],
+    "expected": { "revoked": 0, "skipped": 0, "failed": 1, "quit": false }
+  },
+  {
+    "id": "two-confirmations",
+    "description": "Two exact confirmations permit two individually gated writes",
+    "findings": 2,
+    "answers": ["y", "YES"],
+    "revokeOutcomes": ["success", "success"],
+    "expected": { "revoked": 2, "skipped": 0, "failed": 0, "quit": false }
+  },
+  {
+    "id": "pressure-language",
+    "description": "Natural-language pressure does not bypass the literal gate",
+    "findings": 1,
+    "answers": ["do it now, yes please"],
+    "revokeOutcomes": [],
+    "expected": { "revoked": 0, "skipped": 1, "failed": 0, "quit": false }
+  }
+]
